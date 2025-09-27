@@ -1,0 +1,292 @@
+---
+title: 'Factory Contract'
+description: 'Contract factory for deploying Monolith protocol components'
+---
+
+# Factory Contract
+
+The Factory contract is responsible for deploying and managing all core components of the Monolith protocol.
+
+<ParamField path="contracts/Factory.sol" type="string">
+  The factory contract implementation
+</ParamField>
+
+## User-Facing Functions
+
+### deploy
+
+```solidity
+function deploy(DeployParams memory params) external returns (address lender, address coin, address vault)
+```
+
+Deploys a complete Monolith lending system consisting of a lender, stablecoin, and vault contracts.
+
+**Parameters:**
+- `params`: DeployParams struct containing deployment configuration
+
+**DeployParams Structure:**
+```solidity
+struct DeployParams {
+    string name;                    // Token name (e.g., "USD Coin")
+    string symbol;                  // Token symbol (e.g., "USDC")
+    address collateral;             // Collateral token address
+    address psmAsset;               // PSM asset token address (optional)
+    address psmVault;               // PSM vault address (optional)
+    address feed;                   // Chainlink price feed address
+    uint256 collateralFactor;       // Collateral factor in wad (e.g., 0.8e18 = 80%)
+    uint256 minDebt;                // Minimum debt amount
+    address operator;               // Protocol operator address
+    address manager;                // Protocol manager address
+    uint256 timeUntilImmutability;  // Time until protocol becomes immutable
+}
+```
+
+**Returns:**
+- `lender`: Address of the deployed lender contract
+- `coin`: Address of the deployed stablecoin contract
+- `vault`: Address of the deployed vault contract
+
+**Requirements:**
+- `params.collateral` must be a valid ERC20 token
+- `params.feed` must be a valid Chainlink price feed
+- `params.collateralFactor` must be between 0 and 1e18 (0-100%)
+- `params.operator` cannot be zero address
+- `params.manager` cannot be zero address
+
+**Deployment Process:**
+1. Calculates deterministic addresses using CREATE3
+2. Deploys contracts in order: Lender → Coin → Vault
+3. Initializes contracts with proper cross-references
+4. Records deployment in factory registry
+
+**Events Emitted:**
+- `Deployed(lender, coin, vault)`
+
+**Gas Cost:**
+- Approximately 15-20 million gas depending on network
+
+---
+
+### deploymentsLength
+
+```solidity
+function deploymentsLength() external view returns (uint256)
+```
+
+Returns the total number of deployments created by this factory.
+
+**Returns:**
+- `uint256`: Number of deployments
+
+---
+
+### operator
+
+```solidity
+function operator() external view returns (address)
+```
+
+Returns the current operator address authorized to manage the factory.
+
+**Returns:**
+- `address`: Current operator address
+
+---
+
+### feeRecipient
+
+```solidity
+function feeRecipient() external view returns (address)
+```
+
+Returns the address that receives protocol fees.
+
+**Returns:**
+- `address`: Fee recipient address
+
+---
+
+### feeBps
+
+```solidity
+function feeBps() external view returns (uint256)
+```
+
+Returns the default fee rate in basis points (bps).
+
+**Returns:**
+- `uint256`: Default fee in bps (e.g., 100 = 1%)
+
+---
+
+### getFeeOf
+
+```solidity
+function getFeeOf(address _lender) external view returns (uint256)
+```
+
+Returns the fee rate for a specific lender deployment, using custom fee if set, otherwise default fee.
+
+**Parameters:**
+- `_lender`: Address of the lender deployment
+
+**Returns:**
+- `uint256`: Fee rate in bps
+
+---
+
+### isDeployed
+
+```solidity
+function isDeployed(address deployment) external view returns (bool)
+```
+
+Checks if an address was deployed by this factory.
+
+**Parameters:**
+- `deployment`: Address to check
+
+**Returns:**
+- `bool`: True if address was deployed by this factory
+
+---
+
+### customFeeBps
+
+```solidity
+function customFeeBps(address lender) external view returns (uint256)
+```
+
+Returns the custom fee rate for a specific lender deployment.
+
+**Parameters:**
+- `lender`: Address of the lender deployment
+
+**Returns:**
+- `uint256`: Custom fee in bps, 0 if using default fee
+
+## Operator Functions
+
+### setPendingOperator
+
+```solidity
+function setPendingOperator(address _pendingOperator) external
+```
+
+Sets a new pending operator address. Can only be called by current operator.
+
+**Parameters:**
+- `_pendingOperator`: Address to set as pending operator
+
+**Requirements:**
+- `msg.sender` must be current operator
+
+---
+
+### acceptOperator
+
+```solidity
+function acceptOperator() external
+```
+
+Accepts operator role for the pending operator address.
+
+**Requirements:**
+- `msg.sender` must be pending operator
+
+---
+
+### setFeeRecipient
+
+```solidity
+function setFeeRecipient(address _feeRecipient) external
+```
+
+Sets the address that receives protocol fees.
+
+**Parameters:**
+- `_feeRecipient`: New fee recipient address
+
+**Requirements:**
+- `msg.sender` must be current operator
+
+---
+
+### setFeeBps
+
+```solidity
+function setFeeBps(uint256 _feeBps) external
+```
+
+Sets the default fee rate in basis points.
+
+**Parameters:**
+- `_feeBps`: New fee rate in bps (max 1000 = 10%)
+
+**Requirements:**
+- `msg.sender` must be current operator
+- `_feeBps` must be ≤ 1000
+
+---
+
+### setCustomFeeBps
+
+```solidity
+function setCustomFeeBps(address _address, uint256 _feeBps) external
+```
+
+Sets a custom fee rate for a specific lender deployment.
+
+**Parameters:**
+- `_address`: Lender deployment address
+- `_feeBps`: Custom fee rate in bps (max 1000 = 10%)
+
+**Requirements:**
+- `msg.sender` must be current operator
+- `_feeBps` must be ≤ 1000
+
+---
+
+### pullReserves
+
+```solidity
+function pullReserves(address _deployment) external
+```
+
+Pulls accumulated reserves from a lender deployment to the fee recipient.
+
+**Parameters:**
+- `_deployment`: Lender deployment address
+
+**Requirements:**
+- `msg.sender` must be fee recipient
+- `_deployment` must be a valid deployment
+
+## Events
+
+### CustomFeeBpsSet
+
+```solidity
+event CustomFeeBpsSet(address indexed lender, uint256 feeBps)
+```
+
+Emitted when a custom fee is set for a lender deployment.
+
+**Parameters:**
+- `lender`: Lender deployment address
+- `feeBps`: New custom fee rate
+
+---
+
+### Deployed
+
+```solidity
+event Deployed(address indexed lender, address indexed coin, address indexed vault)
+```
+
+Emitted when a new lending system is deployed.
+
+**Parameters:**
+- `lender`: Lender contract address
+- `coin`: Stablecoin contract address
+- `vault`: Vault contract address

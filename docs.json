@@ -58,6 +58,41 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Contracts Reference",
+        "groups": [
+          {
+            "group": "Core Contracts",
+            "pages": [
+              "reference/Factory",
+              "reference/Lender",
+              "reference/Coin",
+              "reference/Vault",
+              "reference/InterestModel"
+            ]
+          },
+          {
+            "group": "Supporting Contracts",
+            "pages": [
+              "reference/Lens"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "FAQ",
+        "groups": [
+          {
+            "group": "Frequently Asked Questions",
+            "pages": [
+              "faq/general",
+              "faq/protocol",
+              "faq/security",
+              "faq/technical"
+            ]
+          }
+        ]
       }
     ],
     "global": {}

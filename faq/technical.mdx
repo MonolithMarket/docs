@@ -1,0 +1,90 @@
+---
+title: 'Technical FAQ'
+description: 'Frequently asked technical questions'
+sidebar: false
+---
+
+# Technical Questions
+
+<AccordionGroup>
+  <Accordion title="What are the system requirements?">
+    Monolith works with any Web3-compatible wallet:
+
+    - MetaMask, WalletConnect, or similar
+    - Sufficient ETH for gas fees
+    - Basic understanding of DeFi concepts
+    - Internet connection for real-time price feeds
+  </Accordion>
+
+  <Accordion title="Can I use Monolith on mobile?">
+    Yes, through mobile wallets that support Web3 connections. However, we recommend using desktop interfaces for complex operations due to the involved parameters and risk management requirements.
+  </Accordion>
+
+  <Accordion title="How do I contact the team?">
+    For technical support, use our Discord community. For security issues, use our [bug bounty program](/security/bug-bounty). For business inquiries, check our official communication channels.
+  </Accordion>
+
+  <Accordion title="What third-party dependencies does Monolith use?">
+    Key dependencies and their security:
+
+    - **Chainlink**: Decentralized oracle network with battle-tested security
+    - **Solmate**: Community-audited Solidity libraries
+    - **OpenZeppelin**: Industry-standard smart contract components
+    - **Uniswap V3**: Proven automated market maker technology
+  </Accordion>
+
+  <Accordion title="How are admin keys secured?">
+    Administrative security:
+
+    - **Multi-signature Requirements**: Multiple approvals for changes
+    - **Time-locked Operations**: Delay mechanisms for critical changes
+    - **Progressive Decentralization**: Transfer of control to community
+    - **Transparent Operations**: All admin actions logged and verifiable
+    - **Emergency Procedures**: Backup mechanisms for critical situations
+  </Accordion>
+
+  <Accordion title="How does governance work?">
+    Monolith includes governance mechanisms:
+
+    - **Proposal System**: Community can propose protocol changes
+    - **Voting**: Token-weighted voting on proposals
+    - **Timelocks**: Changes require time delays for safety
+    - **Emergency Procedures**: Fast-tracked changes for critical issues
+  </Accordion>
+
+  <Accordion title="What is the role of the Factory contract?">
+    The Factory contract serves as the protocol's deployment and management hub:
+
+    - **Deployment**: Creates new lending pools with deterministic addresses
+    - **Registry**: Maintains list of all deployed contracts
+    - **Fee Management**: Controls protocol fees across deployments
+    - **Operator Control**: Manages protocol-wide settings
+  </Accordion>
+
+  <Accordion title="What is the minimum debt requirement?">
+    Minimum debt prevents dust positions:
+
+    - **Purpose**: Avoids inefficient small positions
+    - **Amount**: Typically 10-100 USD worth of stablecoins
+    - **Enforcement**: Protocol rejects positions below minimum
+    - **Adjustment**: Can be modified through governance
+  </Accordion>
+
+  <Accordion title="How does the protocol handle multiple assets?">
+    Multi-asset support includes:
+
+    - **Collateral Types**: Various accepted collateral assets
+    - **Oracle Integration**: Price feeds for each asset
+    - **Risk Parameters**: Individual factors per asset
+    - **Liquidity Management**: Asset-specific liquidity pools
+  </Accordion>
+
+  <Accordion title="How does the Vault system work?">
+    The Vault provides ERC4626 tokenized yield:
+
+    - **Deposit/Mint**: Convert assets to vault shares
+    - **Withdraw/Redeem**: Convert shares back to assets
+    - **Yield Accrual**: Shares appreciate with protocol revenue
+    - **Staking Integration**: Bonus rewards for long-term holders
+  </Accordion>
+</AccordionGroup>

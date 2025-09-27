@@ -1,0 +1,333 @@
+---
+title: 'Lens Contract'
+description: 'Read-only contract for accessing protocol data'
+---
+
+# Lens Contract
+
+The Lens contract provides read-only access to protocol data and analytics for the Monolith lending protocol.
+
+<ParamField path="contracts/Lens.sol" type="string">
+  View contract for protocol data access
+</ParamField>
+
+## Constructor
+
+```solidity
+constructor()
+```
+
+Initializes the Lens contract with no parameters.
+
+## User Position Functions
+
+### getCollateralOf
+
+```solidity
+function getCollateralOf(Lender _lender, address borrower) public view returns (uint256 collateralAmount)
+```
+
+Returns the collateral balance of a borrower in a specific lender.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `collateralAmount`: Amount of collateral deposited (in wei)
+
+**Note:** This function accesses the lender's internal collateral balance mapping.
+
+---
+
+## Pool Analytics Functions
+
+### getTotalValueLocked
+
+```solidity
+function getTotalValueLocked(Lender _lender) public view returns (uint256 tvl)
+```
+
+Calculates the total value locked in a lender pool.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `tvl`: Total value locked in USD (scaled by price feed decimals)
+
+**Calculation:**
+```solidity
+collateralValue = totalCollateral * collateralPrice
+borrowedValue = totalDebt * coinPrice
+tvl = collateralValue + borrowedValue
+```
+
+---
+
+### getBorrowedAmount
+
+```solidity
+function getBorrowedAmount(Lender _lender) public view returns (uint256 borrowed)
+```
+
+Returns the total amount borrowed from a lender pool.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `borrowed`: Total borrowed amount in wei (Coin tokens)
+
+---
+
+### getUtilizationRate
+
+```solidity
+function getUtilizationRate(Lender _lender) public view returns (uint256 utilization)
+```
+
+Calculates the current utilization rate of a lender pool.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `utilization`: Utilization rate in wad (0-1e18)
+
+**Formula:**
+```solidity
+cash = collateralBalance - totalDebt
+if (cash + totalDebt == 0) return 0;
+return totalDebt * 1e18 / (cash + totalDebt);
+```
+
+---
+
+### getLiquidationThreshold
+
+```solidity
+function getLiquidationThreshold(Lender _lender) public view returns (uint256 threshold)
+```
+
+Returns the liquidation threshold for a lender pool.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `threshold`: Liquidation threshold in wad (e.g., 0.85e18 = 85%)
+
+---
+
+### getHealthFactor
+
+```solidity
+function getHealthFactor(Lender _lender, address borrower) public view returns (uint256 healthFactor)
+```
+
+Calculates the health factor for a borrower's position.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `healthFactor`: Health factor in wad (values > 1e18 are healthy)
+
+**Calculation:**
+```solidity
+collateralValue = collateralAmount * collateralPrice
+debtValue = debtAmount * coinPrice
+if (debtValue == 0) return type(uint256).max;
+healthFactor = collateralValue * liquidationThreshold / debtValue;
+```
+
+---
+
+## Asset Information Functions
+
+### getAssetInfo
+
+```solidity
+function getAssetInfo(Lender _lender) public view returns (
+    address collateral,
+    address coin,
+    address vault,
+    uint256 collateralFactor,
+    uint256 minDebt
+)
+```
+
+Returns comprehensive information about a lender pool's assets.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `collateral`: Address of collateral token
+- `coin`: Address of stablecoin token
+- `vault`: Address of vault contract
+- `collateralFactor`: Maximum collateralization ratio (wad)
+- `minDebt`: Minimum debt amount required
+
+---
+
+### getPriceInfo
+
+```solidity
+function getPriceInfo(Lender _lender) public view returns (
+    uint256 collateralPrice,
+    uint256 coinPrice,
+    uint256 updatedAt
+)
+```
+
+Returns current price information from the lender's price feeds.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `collateralPrice`: Current collateral price (wei per unit)
+- `coinPrice`: Current coin price (wei per unit)
+- `updatedAt`: Timestamp when prices were last updated
+
+---
+
+## Position Analytics Functions
+
+### getPositionInfo
+
+```solidity
+function getPositionInfo(Lender _lender, address borrower) public view returns (
+    uint256 collateralAmount,
+    uint256 debtAmount,
+    uint256 healthFactor,
+    bool isLiquidatable
+)
+```
+
+Returns comprehensive information about a borrower's position.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `collateralAmount`: Amount of collateral deposited
+- `debtAmount`: Amount of debt outstanding
+- `healthFactor`: Current health factor
+- `isLiquidatable`: Whether position can be liquidated
+
+---
+
+### getMaxBorrowAmount
+
+```solidity
+function getMaxBorrowAmount(Lender _lender, address borrower) public view returns (uint256 maxBorrow)
+```
+
+Calculates the maximum amount a borrower can borrow given their current collateral.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `maxBorrow`: Maximum borrowable amount in wei
+
+**Calculation:**
+```solidity
+collateralValue = collateralAmount * collateralPrice
+maxBorrow = collateralValue * collateralFactor / coinPrice;
+```
+
+---
+
+### getMaxWithdrawAmount
+
+```solidity
+function getMaxWithdrawAmount(Lender _lender, address borrower) public view returns (uint256 maxWithdraw)
+```
+
+Calculates the maximum amount a borrower can withdraw without becoming undercollateralized.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `maxWithdraw`: Maximum withdrawable collateral amount
+
+**Calculation:**
+```solidity
+requiredCollateral = debtAmount * coinPrice / collateralFactor;
+maxWithdraw = collateralAmount - requiredCollateral;
+```
+
+---
+
+## Protocol Statistics Functions
+
+### getProtocolStats
+
+```solidity
+function getProtocolStats(Lender _lender) public view returns (
+    uint256 totalCollateral,
+    uint256 totalDebt,
+    uint256 totalPaidDebt,
+    uint256 totalFreeDebt,
+    uint256 utilizationRate,
+    uint256 interestRate
+)
+```
+
+Returns comprehensive statistics about a lender pool.
+
+**Parameters:**
+- `_lender`: Address of the lender contract
+
+**Returns:**
+- `totalCollateral`: Total collateral deposited
+- `totalDebt`: Total debt outstanding
+- `totalPaidDebt`: Total interest-bearing debt
+- `totalFreeDebt`: Total non-interest-bearing debt
+- `utilizationRate`: Current utilization rate
+- `interestRate`: Current borrowing interest rate
+
+---
+
+## Integration Guidelines
+
+### Frontend Integration
+```javascript
+// Get user position info
+const position = await lens.getPositionInfo(lenderAddress, userAddress);
+
+// Check if position is healthy
+if (position.healthFactor < 1e18) {
+    // Position is at risk of liquidation
+    showWarning();
+}
+```
+
+### Smart Contract Integration
+```solidity
+// Use Lens for view functions only
+uint256 utilization = lens.getUtilizationRate(lenderAddress);
+uint256 healthFactor = lens.getHealthFactor(lenderAddress, borrower);
+```
+
+### Best Practices
+- Use Lens for all read operations to avoid state changes
+- Cache results when possible to reduce gas costs
+- Combine multiple calls in a single multicall when needed
+- Handle stale price data appropriately
+
+## Security Considerations
+
+- Lens functions are view-only and cannot modify state
+- Price data may be stale; always check `updatedAt` timestamps
+- Health factors are estimates and can change with price movements
+- Use multicall patterns to batch multiple view calls efficiently

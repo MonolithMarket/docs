@@ -1,0 +1,556 @@
+---
+title: 'Lender Contract'
+description: 'Core lending pool contract for the Monolith protocol'
+---
+
+# Lender Contract
+
+The Lender contract implements the core lending functionality, managing deposits, borrows, liquidations, and redemptions.
+
+<ParamField path="contracts/Lender.sol" type="string">
+  The main lending pool implementation
+</ParamField>
+
+## User-Facing Functions
+
+### adjust
+
+```solidity
+function adjust(address account, int collateralDelta, int debtDelta) external
+```
+
+Adjusts a user's position by modifying collateral and/or debt. This is the primary function for depositing, withdrawing, borrowing, and repaying.
+
+**Parameters:**
+- `account`: Address of the position to adjust
+- `collateralDelta`: Amount to add (positive) or remove (negative) collateral (in wei)
+- `debtDelta`: Amount to borrow (positive) or repay (negative) debt (in wei)
+
+**Requirements:**
+- If `collateralDelta > 0`: Account must approve collateral token transfer
+- If `debtDelta > 0`: Account must have sufficient collateral ratio
+- If `debtDelta < 0`: Account must have sufficient debt to repay
+- Account must not be liquidatable after adjustment
+
+**Behavior:**
+- Automatically accrues interest before adjustment
+- Updates collateral and debt positions
+- Maintains minimum debt requirements
+- Emits position update events
+
+---
+
+### liquidate
+
+```solidity
+function liquidate(address borrower, uint repayAmount, uint minCollateralOut) external returns (uint collateralOut)
+```
+
+Liquidates an undercollateralized position to maintain protocol solvency.
+
+**Parameters:**
+- `borrower`: Address of the position to liquidate
+- `repayAmount`: Amount of debt to repay (in wei)
+- `minCollateralOut`: Minimum collateral amount to receive (slippage protection)
+
+**Returns:**
+- `collateralOut`: Amount of collateral received by liquidator
+
+**Requirements:**
+- Borrower position must be liquidatable
+- `repayAmount` must be ≤ maximum liquidatable debt
+- `repayAmount` must be ≥ minimum liquidation amount
+- Liquidator must have sufficient Coin balance
+
+**Liquidation Process:**
+1. Accrue interest on borrower's position
+2. Verify liquidation conditions
+3. Transfer Coin from liquidator to repay debt
+4. Calculate collateral reward with incentive
+5. Transfer collateral to liquidator
+6. Update borrower's position
+
+**Incentive Calculation:**
+- Base incentive: 8% of repaid debt value
+- Additional incentive for low collateral ratios
+- Maximum incentive: 50%
+
+---
+
+### redeem
+
+```solidity
+function redeem(uint amountIn, uint minAmountOut) external returns (uint amountOut)
+```
+
+Redeems Coin for underlying collateral at current redemption price.
+
+**Parameters:**
+- `amountIn`: Amount of Coin to redeem (in wei)
+- `minAmountOut`: Minimum collateral amount to receive (slippage protection)
+
+**Returns:**
+- `amountOut`: Amount of collateral received
+
+**Requirements:**
+- Redemption must be enabled for caller
+- Sufficient collateral reserves available
+- `amountOut` must be ≥ `minAmountOut`
+
+**Redemption Price:**
+- Calculated based on total debt vs total collateral
+- Includes redemption fee (default 0.03%)
+- Price adjusts dynamically with protocol health
+
+---
+
+### sell
+
+```solidity
+function sell(uint coinIn, uint minAssetOut) external returns (uint assetOut)
+```
+
+Sells Coin for PSM asset at current market price with fee.
+
+**Parameters:**
+- `coinIn`: Amount of Coin to sell (in wei)
+- `minAssetOut`: Minimum PSM asset amount to receive
+
+**Returns:**
+- `assetOut`: Amount of PSM asset received
+
+**Requirements:**
+- PSM must be configured
+- Sufficient PSM reserves available
+- `assetOut` must be ≥ `minAssetOut`
+
+**Pricing:**
+- Uses PSM vault price with sell fee
+- Fee based on utilization and configured rates
+
+---
+
+### buy
+
+```solidity
+function buy(uint assetIn, uint minCoinOut) external returns (uint coinOut)
+```
+
+Buys Coin using PSM asset at current market price with fee.
+
+**Parameters:**
+- `assetIn`: Amount of PSM asset to spend (in wei)
+- `minCoinOut`: Minimum Coin amount to receive
+
+**Returns:**
+- `coinOut`: Amount of Coin received
+
+**Requirements:**
+- PSM must be configured
+- Sufficient PSM reserves available
+- `coinOut` must be ≥ `minCoinOut`
+
+**Pricing:**
+- Uses PSM vault price with buy fee
+- Fee based on utilization and configured rates
+
+---
+
+### delegate
+
+```solidity
+function delegate(address delegatee, bool isDelegatee) external
+```
+
+Delegates or revokes delegation rights for position management.
+
+**Parameters:**
+- `delegatee`: Address to grant/revoke delegation
+- `isDelegatee`: True to grant, false to revoke
+
+**Requirements:**
+- `delegatee` cannot be zero address
+- Cannot delegate to self
+
+**Effects:**
+- Allows delegatee to call `adjust()` on behalf of delegator
+- Delegation can be changed at any time
+
+---
+
+### setRedemptionStatus
+
+```solidity
+function setRedemptionStatus(address account, bool chooseRedeemable) external
+```
+
+Sets whether an account's collateral can be redeemed by others.
+
+**Parameters:**
+- `account`: Address to set redemption status for (can be any address)
+- `chooseRedeemable`: True to allow redemption, false to prevent
+
+**Requirements:**
+- If `account != msg.sender`, must have delegation rights
+
+**Effects:**
+- Controls whether collateral can be seized during bad debt socialization
+- Default is redeemable for new positions
+
+---
+
+### accrueInterest
+
+```solidity
+function accrueInterest() public
+```
+
+Accrues interest on all outstanding debt positions. Called automatically by state-changing functions.
+
+**Effects:**
+- Updates `lastAccrue` timestamp
+- Increases total debt proportionally
+- Updates interest rate based on utilization
+- Accrues protocol reserves
+
+---
+
+### writeOff
+
+```solidity
+function writeOff(address borrower, address to) external returns (bool writtenOff)
+```
+
+Writes off unrecoverable debt and socializes losses across all borrowers.
+
+**Parameters:**
+- `borrower`: Address with bad debt position
+- `to`: Address to receive written-off collateral
+
+**Returns:**
+- `writtenOff`: True if debt was written off
+
+**Requirements:**
+- Position must be underwater (debt > max recoverable value)
+- Only callable by authorized addresses
+
+**Effects:**
+- Reduces total debt proportionally across all positions
+- Transfers remaining collateral to specified address
+- Maintains protocol solvency
+
+## View Functions
+
+### getDebtOf
+
+```solidity
+function getDebtOf(address account) public view returns (uint debt)
+```
+
+Returns the current debt amount for an account, including accrued interest.
+
+**Parameters:**
+- `account`: Address to query debt for
+
+**Returns:**
+- `debt`: Current debt amount in wei
+
+---
+
+### getCollateralPrice
+
+```solidity
+function getCollateralPrice() public view returns (uint price, bool reduceOnly, bool allowLiquidations)
+```
+
+Returns the current collateral price from the price feed.
+
+**Returns:**
+- `price`: Current price in wei per unit
+- `reduceOnly`: True if price feed is stale (only reductions allowed)
+- `allowLiquidations`: True if liquidations are permitted
+
+---
+
+### getFreeDebtRatio
+
+```solidity
+function getFreeDebtRatio() public view returns (uint ratio)
+```
+
+Returns the current ratio of free debt to total debt as a percentage.
+
+**Returns:**
+- `ratio`: Free debt ratio in wad (0-1e18)
+
+---
+
+### getRedeemAmountOut
+
+```solidity
+function getRedeemAmountOut(uint amountIn) public view returns (uint amountOut)
+```
+
+Calculates the amount of collateral received for redeeming Coin.
+
+**Parameters:**
+- `amountIn`: Amount of Coin to redeem
+
+**Returns:**
+- `amountOut`: Amount of collateral received
+
+---
+
+### getSellAmountOut
+
+```solidity
+function getSellAmountOut(uint coinIn) public view returns (uint assetOut)
+```
+
+Calculates the amount of PSM asset received for selling Coin.
+
+**Parameters:**
+- `coinIn`: Amount of Coin to sell
+
+**Returns:**
+- `assetOut`: Amount of PSM asset received
+
+---
+
+### getBuyAmountOut
+
+```solidity
+function getBuyAmountOut(uint assetIn) public view returns (uint coinOut, uint coinFee)
+```
+
+Calculates the amount of Coin received for buying with PSM asset.
+
+**Parameters:**
+- `assetIn`: Amount of PSM asset to spend
+
+**Returns:**
+- `coinOut`: Amount of Coin received
+- `coinFee`: Fee amount deducted
+
+---
+
+### getFeedPrice
+
+```solidity
+function getFeedPrice() external view returns (uint price, uint updatedAt)
+```
+
+Returns raw price feed data without protocol modifications.
+
+**Returns:**
+- `price`: Raw price from Chainlink feed
+- `updatedAt`: Timestamp when price was last updated
+
+## Protocol Management Functions
+
+### setPendingOperator
+
+```solidity
+function setPendingOperator(address _pendingOperator) external
+```
+
+Sets a new pending operator address (two-step ownership transfer).
+
+**Parameters:**
+- `_pendingOperator`: New operator address
+
+**Requirements:**
+- Caller must be current operator
+
+---
+
+### acceptOperator
+
+```solidity
+function acceptOperator() external
+```
+
+Accepts operator role for pending operator.
+
+**Requirements:**
+- Caller must be pending operator
+
+---
+
+### setManager
+
+```solidity
+function setManager(address _manager) external
+```
+
+Sets the manager address for additional administrative functions.
+
+**Parameters:**
+- `_manager`: New manager address
+
+**Requirements:**
+- Caller must be operator or manager
+
+---
+
+### enableImmutabilityNow
+
+```solidity
+function enableImmutabilityNow() external
+```
+
+Immediately enables protocol immutability, preventing further changes.
+
+**Requirements:**
+- Caller must be operator
+- Must be before immutability deadline
+
+---
+
+### pullLocalReserves
+
+```solidity
+function pullLocalReserves() external
+```
+
+Pulls accumulated local reserves to the factory fee recipient.
+
+**Requirements:**
+- Caller must be operator
+
+---
+
+### pullGlobalReserves
+
+```solidity
+function pullGlobalReserves(address _to) external
+```
+
+Pulls accumulated global reserves to specified address.
+
+**Parameters:**
+- `_to`: Address to receive reserves
+
+**Requirements:**
+- Caller must have permission (operator or factory)
+
+## Configuration Functions
+
+### setHalfLife
+
+```solidity
+function setHalfLife(uint64 halfLife) external
+```
+
+Sets the interest rate half-life for exponential decay.
+
+**Parameters:**
+- `halfLife`: New half-life in seconds
+
+**Requirements:**
+- Caller must be operator or manager
+- Must be before immutability deadline
+
+---
+
+### setTargetFreeDebtRatio
+
+```solidity
+function setTargetFreeDebtRatio(uint16 startBps, uint16 endBps) external
+```
+
+Sets the target free debt ratio range in basis points.
+
+**Parameters:**
+- `startBps`: Minimum free debt ratio (basis points)
+- `endBps`: Maximum free debt ratio (basis points)
+
+**Requirements:**
+- Caller must be operator or manager
+- Must be before immutability deadline
+
+---
+
+### setRedeemFeeBps
+
+```solidity
+function setRedeemFeeBps(uint16 _redeemFeeBps) external
+```
+
+Sets the redemption fee in basis points.
+
+**Parameters:**
+- `_redeemFeeBps`: New redemption fee (basis points)
+
+**Requirements:**
+- Caller must be operator or manager
+- Must be before immutability deadline
+
+---
+
+### setLocalReserveFeeBps
+
+```solidity
+function setLocalReserveFeeBps(uint _feeBps) external
+```
+
+Sets the local reserve fee rate.
+
+**Parameters:**
+- `_feeBps`: New fee rate (basis points)
+
+**Requirements:**
+- Caller must be operator
+
+---
+
+### reapprovePsmVault
+
+```solidity
+function reapprovePsmVault() external
+```
+
+Reapproves the PSM vault for unlimited spending (emergency function).
+
+**Requirements:**
+- Must be before immutability deadline
+
+## Key State Variables
+
+### totalPaidDebt
+Total amount of interest-bearing debt in the protocol.
+
+### totalFreeDebt
+Total amount of non-interest-bearing debt in the protocol.
+
+### collateralFactor
+Maximum collateralization ratio (e.g., 0.8e18 = 80%).
+
+### minDebt
+Minimum debt amount required for positions.
+
+### immutabilityDeadline
+Timestamp after which protocol becomes immutable.
+
+### feeBps
+Protocol fee rate in basis points.
+
+## Events
+
+### Adjust
+Emitted when a position is adjusted (deposit/withdraw/borrow/repay).
+
+### Liquidate
+Emitted when a position is liquidated.
+
+### Redeem
+Emitted when Coin is redeemed for collateral.
+
+### AccrueInterest
+Emitted when interest is accrued on debt.
+
+### OperatorSet
+Emitted when operator is changed.
+
+### ManagerSet
+Emitted when manager is changed.

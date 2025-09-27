@@ -1,0 +1,197 @@
+---
+title: 'Interest Model'
+description: 'Dynamic interest rate calculation for borrowing'
+---
+
+# Interest Model
+
+The InterestModel contract calculates dynamic borrowing rates based on utilization and market conditions.
+
+<ParamField path="contracts/InterestModel.sol" type="string">
+  Interest rate calculation implementation
+</ParamField>
+
+## Constructor
+
+```solidity
+constructor()
+```
+
+Initializes the interest model with default parameters.
+
+## Core Calculation Function
+
+### calculateInterest
+
+```solidity
+function calculateInterest(
+    uint256 cash,
+    uint256 borrows,
+    uint256 reserves,
+    uint256 timeElapsed
+) external view returns (uint256)
+```
+
+Calculates the interest accrued over a time period given current pool state.
+
+**Parameters:**
+- `cash`: Amount of cash in the pool (in wei)
+- `borrows`: Amount of outstanding borrows (in wei)
+- `reserves`: Amount of protocol reserves (in wei)
+- `timeElapsed`: Time elapsed since last accrual (in seconds)
+
+**Returns:**
+- `uint256`: Interest accrued during the period (in wei)
+
+**Calculation:**
+```solidity
+utilization = borrows / (cash + borrows - reserves)
+borrowRate = getBorrowRate(utilization)
+interest = borrows * borrowRate * timeElapsed / 1e18
+```
+
+---
+
+## Rate Query Functions
+
+### getBorrowRate
+
+```solidity
+function getBorrowRate(uint256 utilization) public pure returns (uint256)
+```
+
+Calculates the current borrowing interest rate based on utilization.
+
+**Parameters:**
+- `utilization`: Current utilization rate in wad (0-1e18)
+
+**Returns:**
+- `uint256`: Borrow rate per second in wad
+
+**Rate Structure:**
+- **0% to kink (80%)**: Base rate + slope1 * utilization
+- **kink to 100%**: Base rate + slope1 * kink + slope2 * (utilization - kink)
+
+---
+
+### getSupplyRate
+
+```solidity
+function getSupplyRate(uint256 utilization) public pure returns (uint256)
+```
+
+Calculates the current supply interest rate based on utilization.
+
+**Parameters:**
+- `utilization`: Current utilization rate in wad (0-1e18)
+
+**Returns:**
+- `uint256`: Supply rate per second in wad
+
+**Calculation:**
+```solidity
+supplyRate = borrowRate * utilization * (1 - reserveFactor)
+```
+
+---
+
+### getUtilizationRate
+
+```solidity
+function getUtilizationRate(uint256 cash, uint256 borrows, uint256 reserves) public pure returns (uint256)
+```
+
+Calculates the current utilization rate of the lending pool.
+
+**Parameters:**
+- `cash`: Amount of cash in the pool (in wei)
+- `borrows`: Amount of outstanding borrows (in wei)
+- `reserves`: Amount of protocol reserves (in wei)
+
+**Returns:**
+- `uint256`: Utilization rate in wad (0-1e18)
+
+**Formula:**
+```solidity
+if (cash + borrows - reserves == 0) return 0;
+return borrows * 1e18 / (cash + borrows - reserves);
+```
+
+---
+
+## Parameter Constants
+
+The interest model uses fixed parameters for rate calculation:
+
+### Base Rate
+- **Value**: 0% APR (0)
+- **Purpose**: Minimum borrowing rate when utilization is 0%
+
+### Multiplier (Slope 1)
+- **Value**: 4% APR increase per 1% utilization
+- **Purpose**: Gradual rate increase up to kink
+
+### Jump Multiplier (Slope 2)
+- **Value**: 300% APR increase per 1% utilization above kink
+- **Purpose**: Sharp rate increase to discourage full utilization
+
+### Kink
+- **Value**: 80% utilization (0.8e18)
+- **Purpose**: Threshold where rate increase accelerates
+
+### Reserve Factor
+- **Value**: 10% (0.1e18)
+- **Purpose**: Portion of interest that goes to protocol reserves
+
+## Rate Examples
+
+### Low Utilization (20%)
+```
+Borrow Rate: ~0.8% APR
+Supply Rate: ~0.16% APR
+```
+
+### Medium Utilization (60%)
+```
+Borrow Rate: ~2.4% APR
+Supply Rate: ~1.44% APR
+```
+
+### High Utilization (90%)
+```
+Borrow Rate: ~22% APR
+Supply Rate: ~19.8% APR
+```
+
+### Near Full Utilization (99%)
+```
+Borrow Rate: ~298% APR
+Supply Rate: ~268% APR
+```
+
+## Integration
+
+### Lender Contract Integration
+The InterestModel is used by the Lender contract to:
+- Calculate borrowing rates for new loans
+- Accrue interest on existing positions
+- Determine liquidation incentives
+- Set redemption pricing
+
+### Rate Updates
+- Rates are calculated on-demand for each operation
+- No state changes in the InterestModel contract
+- All calculations are deterministic and gas-efficient
+
+### Governance
+Parameters are immutable once deployed:
+- Ensures predictable behavior
+- Prevents rate manipulation
+- Maintains protocol stability
+
+## Security Considerations
+
+- Pure functions prevent state manipulation
+- No external calls during rate calculation
+- Overflow protection through wad math
+- Deterministic results ensure fair pricing
