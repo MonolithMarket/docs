@@ -1,0 +1,33 @@
+---
+title: 'Overview'
+description: 'Complete API reference for all Monolith smart contracts with detailed function specifications'
+icon: 'book-open'
+---
+
+## Contracts
+
+<CardGroup cols={2}>
+  <Card title="Factory" icon="industry" href="/reference/Factory">
+    The main contract for deploying new Monolith stablecoins and managing the protocol.
+  </Card>
+
+  <Card title="Coin" icon="coins" href="/reference/Coin">
+    The ERC-20 stablecoin with redemption and minting functionality.
+  </Card>
+
+  <Card title="Vault" icon="vault" href="/reference/Vault">
+    The staking vault that allows users to earn yield from protocol fees.
+  </Card>
+
+  <Card title="Lender" icon="building-columns" href="/reference/Lender">
+    Manages borrowing positions, collateral, and debt accounting for stablecoins.
+  </Card>
+
+  <Card title="InterestModel" icon="percent" href="/reference/InterestModel">
+    Autonomous interest rate controller that adjusts borrowing rates based on utilization.
+  </Card>
+
+  <Card title="Lens" icon="eye" href="/reference/Lens">
+    Read-only contract providing convenient access to protocol state and user positions.
+  </Card>
+</CardGroup>

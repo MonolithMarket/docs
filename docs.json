@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "Documentation",
   "colors": {
     "primary": "#16A34A",
@@ -16,14 +16,23 @@
           {
             "group": "Overview",
             "pages": [
-              "overview/introduction",
-              "overview/why-monolith",
-              "overview/quickstart"
+              "index",
+              "overview/why-monolith"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/overview",
+              "guides/deploy-stablecoin",
+              "guides/borrow-stablecoins",
+              "guides/buy-and-stake-stablecoins"
             ]
           },
           {
             "group": "Protocol",
             "pages": [
+              "protocol/overview",
               "protocol/stablecoin-factory",
               "protocol/paid-vs-free-debt",
               "protocol/redemptions",
@@ -35,26 +44,20 @@
             ]
           },
           {
-            "group": "User Guides",
-            "pages": [
-              "user-guides/deploy-stablecoin",
-              "user-guides/borrow-stablecoins",
-              "user-guides/buy-and-stake-stablecoins"
-            ]
-          },
-          {
             "group": "Security",
             "pages": [
+              "security/overview",
               "security/audits",
               "security/bug-bounty",
               "security/risks"
             ]
           },
           {
-            "group": "Technical Resources",
+            "group": "Developers",
             "pages": [
-              "technical-resources/contract-addresses",
-              "technical-resources/integration-guide"
+              "developers/overview",
+              "developers/contract-addresses",
+              "developers/integration-guide"
             ]
           }
         ]
@@ -63,18 +66,14 @@
         "tab": "Contracts Reference",
         "groups": [
           {
-            "group": "Core Contracts",
+            "group": "Contracts",
             "pages": [
+              "reference/overview",
               "reference/Factory",
               "reference/Lender",
               "reference/Coin",
               "reference/Vault",
-              "reference/InterestModel"
-            ]
-          },
-          {
-            "group": "Supporting Contracts",
-            "pages": [
+              "reference/InterestModel",
               "reference/Lens"
             ]
           }
