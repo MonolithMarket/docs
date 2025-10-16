@@ -8,20 +8,95 @@ icon: 'percent'
 
 ## Overview
 
-The Interest Rate Controller dynamically adjusts borrowing rates based on protocol conditions.
+The Interest Rate Controller sets the borrow rate for each instance to keep the system balanced and liquid. It is designed to be:
 
-## Mechanism
+- Predictable: changes follow smooth, time‑based curves rather than step functions.
+- Objective: driven by a single measurable signal — the share of free (redeemable) debt in the system.
+- Resilient: implemented as a shared, minimal, non‑upgradeable, external math contract with a failsafe in case of unexpected reverts.
 
-How the controller calculates and adjusts interest rates.
+## Why it exists (and what’s unique)
 
-## Factors
+- Ensures exit liquidity: By targeting a healthy share of free debt, the controller helps keep redemption capacity available without constant governance.
+- Enforces peg stability: The controller infers the market condition of the stablecoin through borrower choice and uses this signal to steer the peg to \$1.
+- Aligns incentives: When free‑debt share is scarce, rates rise to encourage migration to free debt (or repayment). When it’s abundant, rates decay toward a low floor to make paid borrowing attractive again.
+- Smooth policy, minimal complexity: Adjustments are exponential over time with an explicit floor, avoiding volatile jumps.
 
-Key factors that influence interest rate decisions:
+## How it works (high‑level)
 
-- Utilization rate
-- Market conditions
-- Protocol health metrics
+- The controller observes the system’s free‑debt ratio `f` and compares it to a target band `[f_start, f_end]`.
+- If `f < f_start`: the borrow rate increases over time (borrowers mostly choose paid; perceived redemption risk high; price likely ≤ $1).
+- If `f > f_end`: the borrow rate decays over time toward a minimum floor (borrowers mostly choose free; perceived redemption risk low; price likely ≥ $1).
+- If `f` is inside the band: the borrow rate remains constant (price near $1).
 
-## Implementation
+This feedback loop lets borrowers’ mode choices (paid vs free) collectively steer the system toward a stable equilibrium while preserving exit liquidity and peg health.
 
-Technical details of how the controller operates.
+## Peg maintenance (over/under/at‑peg signals)
+
+ - The controller does not read secondary‑market prices. Instead, it treats borrower mode choices as a crowd‑sourced “indirect oracle”: the resulting free‑debt ratio `f` reflects perceived redemption risk (and thus peg pressure) in a robust, manipulation‑resistant way.
+- Interpreting `f` relative to the target band:
+  - `f < f_start` (too little redeemable collateral): most borrowers are choosing paid debt, which we treat as an indirect signal that perceived redemption risk is high. That typically corresponds to price pressure at or below \$1 where an arbitrage opportunity opens up between redemptions and the secondary market. The controller raises the borrow rate to discourage paid borrowing and encourage migration to free debt, expanding redeemability and helping lift the price toward $1.
+  - `f > f_end` (abundant redeemable collateral): most borrowers are choosing free debt, signaling perceived redemption risk is low. That typically corresponds to price pressure at or above \$1 where there is no arbitrage opportunity between redemptions and the secondary market. The controller lets the rate drift toward a floor, making paid borrowing cheaper and drawing borrowers back to paid, while incentivizing new paid borrowers to come in and increase total supply.
+  - `f_start <= f <= f_end`: choices are mixed, signaling moderate perceived redemption risk. The coin is likely near $1; the rate holds steady while redemptions and market participants keep the peg tight.
+- Combined with redemptions (direct $1 exits), this creates a self‑correcting system that keeps the stablecoin near its peg without constant governance or external market information.
+
+## Under the hood: math (from InterestModel.sol)
+
+Let:
+
+- `r_old`: previous borrow rate (mantissa)
+- `dt`: time elapsed
+- `k`: exponential rate constant (`expRate`)
+- `g = exp(-k * dt)`: exponential growth/decay factor
+- `D`: total paid debt (principal that accrues interest)
+
+Case 1 — Below target (increase):
+
+- `r_new = r_old / g = r_old * exp(k * dt)`
+- `I = D * (r_new - r_old) / (k * 365 days)`
+
+Case 2 — Above target (decay toward a floor):
+
+- `r_new = max(r_old * g, r_min)`
+
+If the decay crosses the floor during `dt`, interest integrates piece‑wise: an exponential segment down to `r_min`, then a flat segment at `r_min`:
+
+- `t_min = -ln(r_min / r_old) / k`
+- `I = D * ((r_old - r_min) / k + r_min * (dt - t_min)) / (365 days)`
+
+If the floor is not reached within `dt`:
+
+- `I = D * (r_old - r_new) / (k * 365 days)`
+
+Case 3 — Inside the band (hold):
+
+- `r_new = r_old`
+- `I = D * r_old * dt / (365 days)`
+
+Notes:
+
+- The implementation uses a single function `calculateInterest(...)` to return `r_new` and the interest `I` given `D, r_old, dt, k, f, f_start, f_end`.
+- A minimum rate `r_min` prevents rates from decaying below a fixed floor (0.5% APR).
+- The calculation is called externally from each `Lender` with try/catch, so if anything ever failed, accrual would safely skip instead of freezing funds.
+
+## Inputs and outputs
+
+Inputs per accrual step:
+
+- `totalPaidDebt` (`D`)
+- `lastBorrowRateMantissa` (`r_old`)
+- `timeElapsed` (`dt`)
+- `expRate` (`k`)
+- `lastFreeDebtRatioBps` (`f`)
+- `targetFreeDebtRatioStartBps`, `targetFreeDebtRatioEndBps` (band `[f_start, f_end]`)
+
+Outputs:
+
+- `currBorrowRate` (`r_new`)
+- `interest` (`I`) accumulated over `dt`
+
+See also: [InterestModel contract reference](/reference/InterestModel)
+
+## Related
+
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)
+- [Redemptions](/protocol/redemptions)
