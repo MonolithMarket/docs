@@ -6,12 +6,56 @@ icon: 'industry'
 
 ## Overview
 
-The Stablecoin Factory is the core component responsible for minting and managing stablecoins within the Monolith ecosystem.
+The Stablecoin Factory enables anyone to create new Monolith instances. Each instance is a synthetic asset (e.g., a USD‑pegged stablecoin) consisting of a `Lender` (core instance logic), a `Coin` (the ERC‑20 synthetic token), and a `Vault` (an yield-bearing ERC‑4626). The Factory is also the entry-point for the protocol fee operator.
 
-## How It Works
+## How to create an instance
 
-Detailed explanation of the stablecoin creation process.
+1. Choose your inputs: collateral token, price feed, branding (name/symbol), and risk posture (e.g., collateral factor, minimum debt). Optionally connect a PSM asset/vault for direct convertibility.
+2. Submit a single, permissionless transaction to deploy. The Factory creates three contracts (Lender, Coin, Vault) in a fixed, pre‑computable way.
+3. Announce the addresses and begin distribution, integrations, and liquidity programs as needed. The instance will also be displayed on Monolith UI.
 
-## Parameters
+## Architecture
 
-Key parameters and configurations for the factory.
+### Per‑instance Components
+After deployment, the three following contracts will be created:
+- **Lender**: Core instance contract and main entry-point for borrowers, liquidators and instance operators.
+- **Coin**: ERC‑20 synthetic asset token (e.g., stablecoin) minted/redeemed by the `Lender` for the instance.
+- **Vault**: Yield-bearing ERC‑4626 tokenized wrapper linked to the `Lender` and branded with the instance `(Staked) name`/`(s)symbol`.
+
+## Deploy Parameters
+
+`DeployParams` expected by `Factory.deploy`:
+- **name**: Instance display name used for `Vault`/`Coin` branding.
+- **symbol**: Instance symbol used for `Vault`/`Coin` branding.
+- **collateral**: ERC‑20 address used as collateral.
+- **psmAsset**: ERC‑20 asset used by the PSM (Peg Stability Module), if applicable.
+- **psmVault**: ERC‑4626 vault used by the PSM, if applicable.
+- **feed**: Price feed implementing a Chainlink‑style interface.
+- **collateralFactor**: Risk parameter  in basis points controlling maximum borrow against collateral.
+- **minDebt**: Minimum debt per position or market constraint (enforced by `Lender`).
+- **timeUntilImmutability**: Relative time window after which select `Lender` parameters become immutable. Set to 0 for immediate immutability.
+- **operator**: Instance‑level operator for the `Lender` (Optional. Set to `address(0)` for none).
+- **manager**: Instance‑level manager for the `Lender`. (Optional. Set to `address(0)` for none).
+
+## Integration tips
+
+- Treat the `Lender` address as the canonical identifier for an instance; `Coin` and `Vault` addresses can be fetched from it.
+- Indexing: watch the Factory’s deployment events or `deployments` registry to discover new instances.
+- Wallets/exchanges: list the `Coin` address; staking/earn products can use the `Vault` for deposit/withdraw flows.
+- Dashboards: read instance configuration (feed, collateral, factors) and status (debt, supply, reserves) from the `Lender` to present risk and performance metrics.
+
+If you need implementation details and ABI-level specifics, see the Factory contract reference:
+
+- [Factory contract reference](/reference/Factory)
+
+## Operator role
+
+- The Factory includes an operator role which only controls fee-related parameters.
+- Capabilities:
+  - Choose or rotate the fee recipient that collects protocol reserves from instances.
+  - Set a global protocol fee (bounded by a 10% cap) applied to borrower interest.
+  - Define per‑instance fee overrides bounded by the same cap.
+  - Perform a two‑step operator handoff to safely transfer control when needed.
+- Limitations:
+  - Cannot upgrade contracts, mint tokens, move user funds, or pause instances.
+  - Cannot change risk parameters of instances.
