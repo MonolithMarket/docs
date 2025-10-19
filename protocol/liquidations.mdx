@@ -1,6 +1,6 @@
 ---
 title: 'Liquidations'
-description: 'How undercollateralized positions are liquidated'
+description: 'How unhealthy positions are force-repaid'
 icon: 'flask'
 ---
 
@@ -8,16 +8,53 @@ icon: 'flask'
 
 ## Overview
 
-Liquidations protect the protocol by closing undercollateralized positions.
+Liquidations close unsafe positions when a borrower’s debt exceeds their borrowing power at the current oracle price. Anyone can repay part of an unsafe borrower’s debt in `Coin` and seize collateral with a variable incentive. This keeps solvency intact and prevents bad debt.
 
 ## Triggers
 
-When liquidations are triggered.
+Liquidations are enabled only when a valid, sufficiently fresh oracle price is available. A position becomes liquidatable when:
+
+- Borrowing power < debt at the current price, where borrowing power = price × collateral × collateralFactor.
+- When liquidations are enabled. Liquidations are disabled when no valid price is provided by the feed.
 
 ## Process
 
-Step-by-step liquidation process.
+High‑level flow (per `liquidate(borrower, repayAmount, minCollateralOut)`):
+
+1. Accrue interest and update borrower’s internal accounting.
+2. Read oracle price; require liquidations to be allowed.
+3. Compute the maximum chunk that can be liquidated now:
+   - If the position is healthy, liquidation is not allowed.
+   - If unhealthy, the protocol allows liquidating up to 25% of the borrower's debt, but at least a minimum chunk size (10,000 `Coin`) when applicable.
+4. Reduce the borrower’s debt by `repayAmount`.
+5. Compute the liquidator’s collateral reward at the current price with an incentive (see Incentives below).
+6. Cap the reward by the borrower’s remaining collateral and enforce `minCollateralOut` (slippage protection for the liquidator).
+7. Transfer collateral to the liquidator; pull `repayAmount` of `Coin` from the liquidator and burn it.
+8. If the position is undercollateralized, the protocol attempts a write‑off: delete remaining debt, redistribute it across the system’s borrowers, and hand the borrower’s remaining collateral to the liquidator.
 
 ## Incentives
 
-How liquidators are rewarded for maintaining protocol health.
+The liquidation incentive scales with how far the position is beyond the collateral factor:
+
+- 0% incentive when loan‑to‑value (LTV) is at or below the collateral factor.
+- Up to 10% when LTV is 5 percentage points above the collateral factor.
+- Linear between those points.
+
+Collateral reward calculation (conceptually):
+
+- collateralReward = repayAmount × (1 + incentiveBps/10,000) ÷ price
+- Reward is capped so it cannot exceed the borrower’s available collateral.
+
+This design pays more to liquidators as positions drift further into unsafe territory, incentivizing liquidators while minimizing loss to borrowers.
+
+## Limits and safety valves
+
+- Chunked liquidations: At most ~25% of a borrower’s debt can be liquidated per call (subject to the 10,000 `Coin` minimum). This ensures that the liquidation incentive is sufficient to attract liquidators.
+- Oracle‑gated: If the oracle is stale/invalid, liquidations are temporarily disabled to avoid mispricing.
+- Write‑off path: If a position is effectively irrecoverable (debt > 100× collateral value), remaining debt can be redistributed among borrowers, and the liquidator receives the borrower’s remaining collateral (negligible).
+
+## Example
+
+- Suppose a borrower has debt of 200,000 `Coin`, collateral value of 230,000 at the oracle price, and a collateral factor of 80% (borrowing power = 184,000). The position is undercollateralized (200,000 > 184,000).
+- Maximum liquidatable chunk is 25% of debt = 50,000 `Coin` (greater than the 10,000 minimum).
+- If the incentive computes to 8%, and the price implies 1 `Coin` buys $1 of collateral value, then the liquidator who repays 50,000 `Coin` receives collateral worth 54,000 in value (capped by what’s available), transferred at the oracle price.
