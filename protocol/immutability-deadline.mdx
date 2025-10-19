@@ -1,6 +1,6 @@
 ---
 title: 'Immutability Deadline'
-description: 'The immutability deadline mechanism and its importance'
+description: 'Time‑locked switch that permanently disables sensitive controls, making an instance credibly neutral after launch.'
 icon: 'hourglass'
 ---
 
@@ -8,16 +8,42 @@ icon: 'hourglass'
 
 ## Overview
 
-The immutability deadline ensures protocol stability by preventing certain changes after a set period.
+Each instance has an immutability deadline: a timestamp after which sensitive parameters and admin actions permanently lock. This turns the instance into a credibly‑neutral system with no ongoing configuration powers over protocol behavior.
 
-## Purpose
+## Why it exists
 
-Why immutability deadlines are crucial for protocol security.
+- Early flexibility: Gives operators the ability to finetune parameters after launch.
+- Predictability: Once locked, users can rest assured that the rules will never change.
+- Safety: Eliminates the possibility of human error, building Lindiness over time.
 
-## Timeline
+## How it’s set
 
-How the immutability deadline works over time.
+- On deployment, the deadline is set to `deployTimestamp + timeUntilImmutability`.
+- `timeUntilImmutability` is bounded (less than 4 years) and can be `0` for immediate immutability at launch.
+- Before the deadline, the operator may call an early lock by calling `enableImmutabilityNow()` (irreversible, cannot be delayed or reopened later).
 
-## Implications
+## What the deadline locks
 
-What happens when the deadline is reached and what it means for users.
+After the deadline passes (or is enabled early), the following become permanently unavailable:
+
+- Interest policy knobs:
+  - Half‑life of rate changes (exponential rate)
+  - Target free‑debt ratio band
+  - Redemption fee basis points
+- PSM‑related mutability:
+  - The buy path (asset→coin) through the PSM wrapper
+
+These gates ensure the instance’s monetary policy surface cannot be altered after the lock, and that exposure to the PSM asset can no longer increase.
+
+## What remains adjustable (intentionally)
+
+Only fee-related actions remain accessible by the operator:
+
+- Operator/manager rotation
+- Local reserve fee bps for the instance operator (bounded by a 10% cap)
+- Pulling the instance operator fee
+
+## Related
+
+- [Interest Rate Controller](/protocol/interest-rate-controller)
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)
