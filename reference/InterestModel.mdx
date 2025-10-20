@@ -6,19 +6,11 @@ icon: 'percent'
 
 # Interest Model
 
-The InterestModel contract calculates dynamic borrowing rates based on utilization and market conditions.
+The InterestModel contract calculates the borrow rate and accrued interest using an exponential controller driven by the free‑debt ratio. It is a shared, pure math contract used by all `Lender` instances.
 
 <ParamField path="contracts/InterestModel.sol" type="string">
   Interest rate calculation implementation
 </ParamField>
-
-## Constructor
-
-```solidity
-constructor()
-```
-
-Initializes the interest model with default parameters.
 
 ## Core Calculation Function
 
@@ -26,173 +18,57 @@ Initializes the interest model with default parameters.
 
 ```solidity
 function calculateInterest(
-    uint256 cash,
-    uint256 borrows,
-    uint256 reserves,
-    uint256 timeElapsed
-) external view returns (uint256)
+    uint _totalPaidDebt,
+    uint _lastRate,
+    uint _timeElapsed,
+    uint _expRate,
+    uint _lastFreeDebtRatioBps,
+    uint _targetFreeDebtRatioStartBps,
+    uint _targetFreeDebtRatioEndBps
+) external pure returns (uint currBorrowRate, uint interest)
 ```
 
-Calculates the interest accrued over a time period given current pool state.
+Calculates the new borrow rate and the interest accrued over `_timeElapsed` seconds using an exponential controller around a target free‑debt ratio band.
 
 **Parameters:**
-- `cash`: Amount of cash in the pool (in wei)
-- `borrows`: Amount of outstanding borrows (in wei)
-- `reserves`: Amount of protocol reserves (in wei)
-- `timeElapsed`: Time elapsed since last accrual (in seconds)
+- `_totalPaidDebt`: Current paid (interest‑bearing) debt principal `D`.
+- `_lastRate`: Previous borrow rate mantissa `r_old` (APR scaled by 1e18).
+- `_timeElapsed`: Seconds since last accrual `dt`.
+- `_expRate`: Exponential rate constant `k` (derived from half‑life via `wadLn(2e18)/halfLife`).
+- `_lastFreeDebtRatioBps`: Last observed free‑debt ratio `f` in basis points (0–10000), including PSM assets.
+- `_targetFreeDebtRatioStartBps`, `_targetFreeDebtRatioEndBps`: Target band `[f_start, f_end]` in basis points.
 
 **Returns:**
-- `uint256`: Interest accrued during the period (in wei)
+- `currBorrowRate`: Updated borrow rate mantissa `r_new` (APR scaled by 1e18).
+- `interest`: Accrued interest amount over the interval.
 
-**Calculation:**
-```solidity
-utilization = borrows / (cash + borrows - reserves)
-borrowRate = getBorrowRate(utilization)
-interest = borrows * borrowRate * timeElapsed / 1e18
-```
+**Algorithm summary:**
+- Let `g = exp(-k * dt)`.
+- If `f < f_start` (below band): rate grows exponentially
+  - `r_new = r_old / g`
+  - `interest = D * (r_new - r_old) / (k * 365 days)`
+- Else if `f > f_end` (above band): rate decays exponentially toward a floor
+  - `r_new = max(r_old * g, r_min)` with `r_min = 0.5% APR`
+  - If the decay hits the floor during `dt`:
+    - `t_min = -ln(r_min / r_old) / k`
+    - `interest = D * ((r_old - r_min) / k + r_min * (dt - t_min)) / (365 days)`
+  - Else:
+    - `interest = D * (r_old - r_new) / (k * 365 days)`
+- Else (inside band): hold rate constant
+  - `r_new = r_old`
+  - `interest = D * r_old * dt / (365 days * 1e18)`
 
----
+## Constants
 
-## Rate Query Functions
+- `MIN_RATE = 0.5% APR` (as `5e15` in 1e18 mantissa) — lower bound for the borrow rate.
 
-### getBorrowRate
+## Integration Notes
 
-```solidity
-function getBorrowRate(uint256 utilization) public pure returns (uint256)
-```
-
-Calculates the current borrowing interest rate based on utilization.
-
-**Parameters:**
-- `utilization`: Current utilization rate in wad (0-1e18)
-
-**Returns:**
-- `uint256`: Borrow rate per second in wad
-
-**Rate Structure:**
-- **0% to kink (80%)**: Base rate + slope1 * utilization
-- **kink to 100%**: Base rate + slope1 * kink + slope2 * (utilization - kink)
-
----
-
-### getSupplyRate
-
-```solidity
-function getSupplyRate(uint256 utilization) public pure returns (uint256)
-```
-
-Calculates the current supply interest rate based on utilization.
-
-**Parameters:**
-- `utilization`: Current utilization rate in wad (0-1e18)
-
-**Returns:**
-- `uint256`: Supply rate per second in wad
-
-**Calculation:**
-```solidity
-supplyRate = borrowRate * utilization * (1 - reserveFactor)
-```
-
----
-
-### getUtilizationRate
-
-```solidity
-function getUtilizationRate(uint256 cash, uint256 borrows, uint256 reserves) public pure returns (uint256)
-```
-
-Calculates the current utilization rate of the lending pool.
-
-**Parameters:**
-- `cash`: Amount of cash in the pool (in wei)
-- `borrows`: Amount of outstanding borrows (in wei)
-- `reserves`: Amount of protocol reserves (in wei)
-
-**Returns:**
-- `uint256`: Utilization rate in wad (0-1e18)
-
-**Formula:**
-```solidity
-if (cash + borrows - reserves == 0) return 0;
-return borrows * 1e18 / (cash + borrows - reserves);
-```
-
----
-
-## Parameter Constants
-
-The interest model uses fixed parameters for rate calculation:
-
-### Base Rate
-- **Value**: 0% APR (0)
-- **Purpose**: Minimum borrowing rate when utilization is 0%
-
-### Multiplier (Slope 1)
-- **Value**: 4% APR increase per 1% utilization
-- **Purpose**: Gradual rate increase up to kink
-
-### Jump Multiplier (Slope 2)
-- **Value**: 300% APR increase per 1% utilization above kink
-- **Purpose**: Sharp rate increase to discourage full utilization
-
-### Kink
-- **Value**: 80% utilization (0.8e18)
-- **Purpose**: Threshold where rate increase accelerates
-
-### Reserve Factor
-- **Value**: 10% (0.1e18)
-- **Purpose**: Portion of interest that goes to protocol reserves
-
-## Rate Examples
-
-### Low Utilization (20%)
-```
-Borrow Rate: ~0.8% APR
-Supply Rate: ~0.16% APR
-```
-
-### Medium Utilization (60%)
-```
-Borrow Rate: ~2.4% APR
-Supply Rate: ~1.44% APR
-```
-
-### High Utilization (90%)
-```
-Borrow Rate: ~22% APR
-Supply Rate: ~19.8% APR
-```
-
-### Near Full Utilization (99%)
-```
-Borrow Rate: ~298% APR
-Supply Rate: ~268% APR
-```
-
-## Integration
-
-### Lender Contract Integration
-The InterestModel is used by the Lender contract to:
-- Calculate borrowing rates for new loans
-- Accrue interest on existing positions
-- Determine liquidation incentives
-- Set redemption pricing
-
-### Rate Updates
-- Rates are calculated on-demand for each operation
-- No state changes in the InterestModel contract
-- All calculations are deterministic and gas-efficient
-
-### Governance
-Parameters are immutable once deployed:
-- Ensures predictable behavior
-- Prevents rate manipulation
-- Maintains protocol stability
+- The model is stateless and pure; it is called externally by `Lender` using `try/catch` so accrual can safely skip if anything unexpected happens.
+- Each `Lender` stores its own `expRate` (set via half‑life) and target band; these can be adjusted before the immutability deadline.
+- One shared `InterestModel` instance is deployed by the `Factory` and referenced by all `Lender` contracts.
 
 ## Security Considerations
 
-- Pure functions prevent state manipulation
-- No external calls during rate calculation
-- Overflow protection through wad math
-- Deterministic results ensure fair pricing
+- Pure math (no state) and no external calls inside the function.
+- Uses wad math (`wadExp`, `wadLn`) and explicit floor handling to avoid overflows and negative rates.

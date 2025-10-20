@@ -4,7 +4,7 @@ description: 'Contract factory for deploying Monolith protocol components'
 icon: 'industry'
 ---
 
-The Factory contract is responsible for deploying and managing all core components of the Monolith protocol.
+The Factory contract is responsible for deploying all components of a Monolith instance and managing the global fee.
 
 <ParamField path="contracts/Factory.sol" type="string">
   The factory contract implementation
@@ -32,10 +32,10 @@ struct DeployParams {
     address psmAsset;               // PSM asset token address (optional)
     address psmVault;               // PSM vault address (optional)
     address feed;                   // Chainlink price feed address
-    uint256 collateralFactor;       // Collateral factor in wad (e.g., 0.8e18 = 80%)
+    uint256 collateralFactor;       // Collateral factor in basis points (e.g., 8000 = 80%)
     uint256 minDebt;                // Minimum debt amount
-    address operator;               // Protocol operator address
-    address manager;                // Protocol manager address
+    address operator;               // Protocol operator address (optional, can be address(0))
+    address manager;                // Protocol manager address (optional, can be address(0))
     uint256 timeUntilImmutability;  // Time until protocol becomes immutable
 }
 ```
@@ -48,9 +48,8 @@ struct DeployParams {
 **Requirements:**
 - `params.collateral` must be a valid ERC20 token
 - `params.feed` must be a valid Chainlink price feed
-- `params.collateralFactor` must be between 0 and 1e18 (0-100%)
-- `params.operator` cannot be zero address
-- `params.manager` cannot be zero address
+- `params.collateralFactor` must be between 0 and 10000 (0-100% in bps)
+- `params.operator` and `params.manager` may be `address(0)` if you prefer no operator/manager
 
 **Deployment Process:**
 1. Calculates deterministic addresses using CREATE3
@@ -60,9 +59,6 @@ struct DeployParams {
 
 **Events Emitted:**
 - `Deployed(lender, coin, vault)`
-
-**Gas Cost:**
-- Approximately 15-20 million gas depending on network
 
 ---
 

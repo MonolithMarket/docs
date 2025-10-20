@@ -25,7 +25,7 @@ constructor(
 Initializes the stablecoin with a designated minter address, token name, and symbol.
 
 **Parameters:**
-- `_minter`: Address authorized to mint new tokens
+- `_minter`: Address authorized to mint new tokens (Lender.sol)
 - `name`: ERC20 token name (e.g., "USD Coin")
 - `symbol`: ERC20 token symbol (e.g., "USDC")
 
@@ -37,15 +37,14 @@ Initializes the stablecoin with a designated minter address, token name, and sym
 function mint(address to, uint256 amount) external
 ```
 
-Creates new tokens and assigns them to the specified address. Can only be called by the designated minter.
+Creates new tokens and assigns them to the specified address. Can only be called by the minter (Lender.sol).
 
 **Parameters:**
 - `to`: Address to receive the minted tokens
 - `amount`: Amount of tokens to mint (in wei, 18 decimals)
 
 **Requirements:**
-- `msg.sender` must be the designated minter address
-- `to` cannot be the zero address
+- `msg.sender` must be the minter address (Lender.sol).
 
 **Events Emitted:**
 - `Transfer(address(0), to, amount)`
@@ -87,7 +86,6 @@ Standard ERC20 transfer function. Moves tokens from caller's balance to another 
 - `bool`: Always returns true on successful transfer
 
 **Requirements:**
-- `to` cannot be the zero address
 - Caller must have sufficient balance
 
 **Events Emitted:**
@@ -112,7 +110,6 @@ Standard ERC20 transferFrom function. Moves tokens from one address to another u
 - `bool`: Always returns true on successful transfer
 
 **Requirements:**
-- `from` and `to` cannot be the zero address
 - `from` must have sufficient balance
 - Caller must have sufficient allowance from `from`
 
@@ -140,41 +137,6 @@ Standard ERC20 approve function. Allows spender to transfer up to amount tokens 
 - `Approval(msg.sender, spender, amount)`
 
 ---
-
-### increaseAllowance
-
-```solidity
-function increaseAllowance(address spender, uint256 addedValue) external returns (bool)
-```
-
-Increases the allowance granted to spender by addedValue.
-
-**Parameters:**
-- `spender`: Address whose allowance should be increased
-- `addedValue`: Amount to add to current allowance
-
-**Returns:**
-- `bool`: Always returns true on successful increase
-
----
-
-### decreaseAllowance
-
-```solidity
-function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool)
-```
-
-Decreases the allowance granted to spender by subtractedValue.
-
-**Parameters:**
-- `spender`: Address whose allowance should be decreased
-- `subtractedValue`: Amount to subtract from current allowance
-
-**Returns:**
-- `bool`: Always returns true on successful decrease
-
-**Requirements:**
-- Current allowance must be greater than or equal to subtractedValue
 
 ## View Functions
 
@@ -269,10 +231,10 @@ Returns the number of decimals used for token amounts.
 function minter() external view returns (address)
 ```
 
-Returns the address authorized to mint new tokens.
+Returns the address authorized to mint new tokens (Lender.sol).
 
 **Returns:**
-- `address`: Designated minter address
+- `address`: Minter address
 
 ## Events
 
