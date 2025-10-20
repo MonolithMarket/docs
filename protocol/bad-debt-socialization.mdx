@@ -1,6 +1,6 @@
 ---
 title: 'Bad Debt Socialization'
-description: 'How bad debt is distributed across the protocol'
+description: 'How irrecoverable losses are redistributed across borrowers when a loan is written off'
 icon: 'users'
 ---
 
@@ -8,16 +8,41 @@ icon: 'users'
 
 ## Overview
 
-Bad debt socialization ensures that losses from unrecoverable debt are fairly distributed.
+When a borrower’s position becomes undercollateralized, fully recovering the debt via normal liquidations may be impossible. In that rare case, the protocol “writes off” the position and socializes the loss across all remaining borrowers of the instance in order to prevent a bank run among `Coin` holders.
+
+Write‑offs are guarded by strict conditions and are typically invoked automatically at the end of a liquidation. They may also be executed independent of liquidations via the `writeOff()` function.
 
 ## Mechanism
 
-How bad debt is identified and socialized.
+Bad debt identification and handling are governed by the `writeOff(borrower, to)` flow:
+
+- Accrue and sync: Interest is accrued and the borrower’s internal accounting is synchronized.
+- Price gate: The oracle must report a valid, sufficiently fresh price; otherwise socialization is disabled.
+- Write off threshold: If `debt > 100 × collateralValue` at the oracle price, the collateral value is considered negligible and the position qualifies for write‑off.
+- Three actions then occur atomically:
+  1) Delete borrower debt: The borrower’s entire outstanding debt is wiped.
+  2) Redistribute the wiped debt: The same amount of debt is added back to the system by increasing total free and total paid debt in proportion to their current sizes.
+  3) Transfer residual collateral: All of the borrower’s remaining collateral is sent to `to` (the liquidator/caller), and the borrower’s collateral balance is set to zero.
+
+This function is called from liquidations via a safe external call (try/catch) so that liquidation success is not jeopardized if the write‑off preconditions are not met.
 
 ## Impact
 
-Effects on different stakeholders in the protocol.
+Effects by stakeholder:
+
+- Remaining borrowers (free and paid): Their total pool debt increases while their individual shares remain unchanged, so their computed debts rise proportionally. This fairly spreads the loss across active borrowers.
+- Liquidator/caller: Receives the borrower’s remaining collateral as compensation for calling the `writeOff()` function.
+- `Coin` holders/stakers: Re-collateralizes their holdings using collateral of other borrowers and avoids bank runs.
 
 ## Prevention
 
-Strategies to minimize bad debt accumulation.
+Preventing bad debt write‑offs starts with prudent instance configuration and healthy market structure:
+
+- Conservative collateral factors and robust oracles limit the chance of undercollateralization.
+- Timely liquidations reduce drift into the write‑off zone.
+- The immutability deadline locks sensitive parameters after launch, removing configuration risk over time.
+
+Related:
+
+- [Liquidations](/protocol/liquidations)
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)
