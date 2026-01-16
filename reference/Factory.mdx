@@ -24,17 +24,21 @@ Deploys a complete Monolith lending system consisting of a lender, stablecoin, a
 **DeployParams Structure:**
 ```solidity
 struct DeployParams {
-    string name;                    // Token name (e.g., "USD Coin")
-    string symbol;                  // Token symbol (e.g., "USDC")
-    address collateral;             // Collateral token address
-    address psmAsset;               // PSM asset token address (optional)
-    address psmVault;               // PSM vault address (optional)
-    address feed;                   // Chainlink price feed address
-    uint256 collateralFactor;       // Collateral factor in basis points (e.g., 8000 = 80%)
-    uint256 minDebt;                // Minimum debt amount
-    address operator;               // Protocol operator address (optional, can be address(0))
-    address manager;                // Protocol manager address (optional, can be address(0))
-    uint256 timeUntilImmutability;  // Time until protocol becomes immutable
+    string name;                        // Token name (e.g., "USD Coin")
+    string symbol;                      // Token symbol (e.g., "USDC")
+    address collateral;                 // Collateral token address
+    address psmAsset;                   // PSM asset token address (optional)
+    address psmVault;                   // PSM vault address (optional)
+    address feed;                       // Chainlink price feed address
+    uint256 collateralFactor;           // Collateral factor in basis points (e.g., 8000 = 80%)
+    uint256 minDebt;                    // Minimum debt amount
+    address operator;                   // Protocol operator address (optional, can be address(0))
+    address manager;                    // Protocol manager address (optional, can be address(0))
+    uint256 timeUntilImmutability;      // Time until protocol becomes immutable
+    uint64 halfLife;                    // Interest rate half-life (12 hours to 30 days)
+    uint16 targetFreeDebtRatioStartBps; // Target free debt ratio lower bound (≥500 bps)
+    uint16 targetFreeDebtRatioEndBps;   // Target free debt ratio upper bound (≤9500 bps)
+    uint16 redeemFeeBps;                // Redemption fee (≤300 bps)
 }
 ```
 

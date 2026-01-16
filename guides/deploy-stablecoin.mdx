@@ -22,8 +22,15 @@ Set your stablecoin parameters:
 
 - **Name**: Choose a unique name for your stablecoin
 - **Symbol**: Set the token symbol (e.g., USDX)
-- **Collateral**: Select backing collateral type
-- **Initial Supply**: Set initial mint amount
+- **Collateral**: Select backing collateral token address
+- **Price Feed**: Chainlink-style oracle for collateral pricing
+- **Collateral Factor**: Maximum LTV ratio (in basis points, e.g., 8000 = 80%)
+- **Minimum Debt**: Minimum debt amount per position
+- **Time Until Immutability**: Duration until parameters become immutable
+- **Half-Life**: Interest rate half-life (12 hours to 30 days)
+- **Target Free Debt Ratio**: Lower and upper bounds of target band (500-9500 bps)
+- **Redemption Fee**: Fee charged on redemptions (max 300 bps)
+- **Operator/Manager**: Optional addresses for parameter management (can be address(0))
 
 ## Step 3: Deploy
 
@@ -36,5 +43,6 @@ Once deployed, verify your stablecoin on the blockchain and add it to wallets.
 ## Important Notes
 
 - Deployment fees apply
-- Parameters cannot be changed after deployment
+- Some parameters (half-life, target ratios, redemption fee) can be adjusted by operator/manager before the immutability deadline
+- Core parameters (collateral, feed, collateral factor) cannot be changed after deployment
 - Monitor your stablecoin's performance regularly

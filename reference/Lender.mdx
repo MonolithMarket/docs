@@ -453,6 +453,7 @@ Sets the interest rate half-life for exponential decay and growth.
 **Requirements:**
 - Caller must be operator or manager
 - Must be before immutability deadline
+- `halfLife` must be between 12 hours and 30 days
 
 ---
 
@@ -471,6 +472,8 @@ Sets the target free debt ratio range in basis points.
 **Requirements:**
 - Caller must be operator or manager
 - Must be before immutability deadline
+- `startBps` must be ≥500 and ≤ `endBps`
+- `endBps` must be ≤9500
 
 ---
 
@@ -488,6 +491,7 @@ Sets the redemption fee in basis points.
 **Requirements:**
 - Caller must be operator or manager
 - Must be before immutability deadline
+- `_redeemFeeBps` must be ≤300 (3%)
 
 ---
 

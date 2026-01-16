@@ -31,11 +31,15 @@ After deployment, the three following contracts will be created:
 - **psmAsset**: ERC‑20 asset used by the PSM (Peg Stability Module), if applicable.
 - **psmVault**: ERC‑4626 vault used by the PSM, if applicable.
 - **feed**: Price feed implementing a Chainlink‑style interface.
-- **collateralFactor**: Risk parameter  in basis points controlling maximum borrow against collateral.
+- **collateralFactor**: Risk parameter in basis points controlling maximum borrow against collateral.
 - **minDebt**: Minimum debt per position or market constraint (enforced by `Lender`).
 - **timeUntilImmutability**: Relative time window after which select `Lender` parameters become immutable. Set to 0 for immediate immutability.
 - **operator**: Instance‑level operator for the `Lender` (Optional. Set to `address(0)` for none).
 - **manager**: Instance‑level manager for the `Lender`. (Optional. Set to `address(0)` for none).
+- **halfLife**: Interest rate half‑life for the exponential rate model. Must be between 12 hours and 30 days.
+- **targetFreeDebtRatioStartBps**: Lower bound of the target free‑debt ratio band in basis points. Must be ≥500 and ≤ `targetFreeDebtRatioEndBps`.
+- **targetFreeDebtRatioEndBps**: Upper bound of the target free‑debt ratio band in basis points. Must be ≤9500.
+- **redeemFeeBps**: Redemption fee in basis points. Must be ≤300 (3%).
 
 ## Integration tips
 
