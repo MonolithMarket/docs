@@ -1,48 +1,118 @@
 ---
 title: 'Deploy a Stablecoin'
-description: 'Step-by-step guide to deploying your own stablecoin'
+description: 'How to choose the right parameters for your stablecoin'
 icon: 'rocket'
 ---
 
-## Prerequisites
+Deploy your stablecoin at [app.monolith.market/deploy](https://app.monolith.market/deploy).
 
-Before deploying a stablecoin, ensure you have:
+This guide helps you choose the right parameters for your use case.
 
-- Sufficient ETH for gas fees
-- Understanding of stablecoin parameters
-- Access to the Monolith protocol interface
+## Collateral Factor
 
-## Step 1: Access the Factory
+How much users can borrow against their collateral (in basis points).
 
-Navigate to the Stablecoin Factory in the Monolith interface.
+| Value | Risk Profile | Example Use Case |
+|-------|--------------|------------------|
+| 4000 (40%) | Conservative | Volatile assets like memecoins |
+| 6000 (60%) | Moderate | Standard crypto (ETH, BTC) |
+| 7500 (75%) | Aggressive | Liquid assets (stETH, LSTs) |
+| 8500 (85%) | Maximum | Very stable assets with deep liquidity |
 
-## Step 2: Configure Parameters
+Higher values = more capital efficient but higher bad debt risk during volatility.
 
-Set your stablecoin parameters:
+## Minimum Debt
 
-- **Name**: Choose a unique name for your stablecoin
-- **Symbol**: Set the token symbol (e.g., USDX)
-- **Collateral**: Select backing collateral token address
-- **Price Feed**: Chainlink-style oracle for collateral pricing
-- **Collateral Factor**: Maximum LTV ratio (in basis points, e.g., 8000 = 80%)
-- **Minimum Debt**: Minimum debt amount per position
-- **Time Until Immutability**: Duration until parameters become immutable
-- **Half-Life**: Interest rate half-life (12 hours to 30 days)
-- **Target Free Debt Ratio**: Lower and upper bounds of target band (500-9500 bps)
-- **Redemption Fee**: Fee charged on redemptions (max 300 bps)
-- **Operator/Manager**: Optional addresses for parameter management (can be address(0))
+The smallest loan size allowed. Prevents dust positions that are uneconomical to liquidate.
 
-## Step 3: Deploy
+- **Ethereum mainnet**: 1,000 Coin recommended (high gas costs)
+- **Expensive L2s** (Arbitrum, Optimism): 50-100 Coin
+- **Cheap L2s** (Base, Blast): 10-50 Coin
 
-Review your configuration and confirm the deployment transaction.
+Set this high enough that liquidating the minimum position is profitable after gas.
 
-## Step 4: Verify
+## Time Until Immutability
 
-Once deployed, verify your stablecoin on the blockchain and add it to wallets.
+How long you retain the ability to adjust parameters (half-life, target ratios, redemption fee).
 
-## Important Notes
+| Duration | When to Use |
+|----------|-------------|
+| 0 (immediate) | Full trustlessness, no parameter changes ever |
+| 6 months | Quick bootstrapping, limited tuning window |
+| 1-2 years | Standard launch, time to optimize based on real usage |
+| 4 years (max) | Maximum flexibility for long-term tuning |
 
-- Deployment fees apply
-- Some parameters (half-life, target ratios, redemption fee) can be adjusted by operator/manager before the immutability deadline
-- Core parameters (collateral, feed, collateral factor) cannot be changed after deployment
-- Monitor your stablecoin's performance regularly
+After this deadline, all parameters become immutable. The operator retains only fee collection and the ability to adjust local reserve fee.
+
+## Half-Life
+
+Controls how quickly the borrow rate adjusts when the free debt ratio is outside the target band.
+
+- **12 hours**: Very responsive rates, can be volatile
+- **3-7 days**: Balanced responsiveness (recommended for most)
+- **30 days**: Slow, stable rate changes
+
+Shorter half-life = rates react faster to market conditions but may feel volatile to borrowers.
+
+## Target Free Debt Ratio Band
+
+Defines the "healthy" range for redeemable debt. Rates stay flat inside this band, increase below it, and decrease above it.
+
+- **Narrower bands** = more reactive rates, tighter control
+- **Wider bands** = more stable rates, less frequent adjustments
+
+The optimal band depends on your collateral type, market conditions, and user base. Use the operator role to experiment and adjust based on real usage data.
+
+## Redemption Fee
+
+Fee charged when users redeem Coin for collateral (max 300 bps / 3%).
+
+- **0 bps**: Best redemption UX, no protection for free borrowers
+- **30-50 bps**: Light protection, still attractive for arbitrage
+- **100-200 bps**: Moderate protection, reduces redemption frequency
+- **300 bps**: Maximum protection for free debt borrowers
+
+Higher fees shift the price floor below \$1. This can be useful if your stablecoin tends to trade above \$1 due to supply constraints.
+
+## Operator and Manager
+
+Set to `address(0)` for a fully trustless launch with no parameter control.
+
+Otherwise:
+- **Operator**: Full parameter control + fee collection
+- **Manager**: Parameter tuning only (no fee access)
+
+Use a multisig for the operator address if you want decentralized control.
+
+## Example Configurations
+
+### Conservative ETH-backed USD (Mainnet)
+- Collateral Factor: 6000 (60%)
+- Minimum Debt: 1,000
+- Half-Life: 7 days
+- Redemption Fee: 50 bps
+- Immutability: 1 year
+
+### High-efficiency LST-backed USD (L2)
+- Collateral Factor: 7500 (75%)
+- Minimum Debt: 50
+- Half-Life: 3 days
+- Redemption Fee: 30 bps
+- Immutability: 2 years
+
+### Immutable trustless launch (L2)
+- Collateral Factor: 6000 (60%)
+- Minimum Debt: 100
+- Half-Life: 5 days
+- Redemption Fee: 100 bps
+- Immutability: 0 (immediate)
+- Operator/Manager: `address(0)`
+
+## After Deployment
+
+Your instance appears on Monolith UI automatically. Next steps:
+- Bootstrap liquidity (DEX pools, PSM if configured)
+- Attract borrowers and stakers
+- Monitor and tune parameters if you retained operator access
+
+See [Operate a Stablecoin](/guides/operate-stablecoin) for ongoing management.
