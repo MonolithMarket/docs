@@ -1,0 +1,177 @@
+---
+title: 'Redeem Stablecoins'
+description: 'How to redeem stablecoins for underlying collateral'
+icon: 'money-bill-transfer'
+---
+
+# Redeem Stablecoins
+
+Redemptions allow you to exchange stablecoins directly for collateral at the oracle price. This provides guaranteed exit liquidity and helps maintain the stablecoin's peg.
+
+## Overview
+
+Redemptions let you:
+- Exit your stablecoin position for collateral at a known price
+- Arbitrage when the stablecoin trades below $1 on secondary markets
+- Access liquidity without relying on DEX depth
+
+<Note>
+Only the portion of collateral backed by **free debt** positions is available for redemption. Paid debt positions are protected from redemptions.
+</Note>
+
+## Prerequisites
+
+Before redeeming, ensure:
+
+- You hold the stablecoin (Coin) you want to redeem
+- Sufficient free debt exists in the system to back your redemption
+- The oracle price feed is not stale (liquidations must be enabled)
+
+## How Redemptions Work
+
+1. **You submit** Coin to redeem
+2. **Protocol calculates** collateral value at oracle price minus the redemption fee
+3. **Protocol burns** your Coin and reduces total free debt
+4. **Protocol transfers** collateral to you
+5. **Free debt borrowers** have their debt and collateral reduced proportionally
+
+### Redemption Fee
+
+A small fee (set per instance, max 3%) protects free debt borrowers from adverse selection:
+
+```
+Collateral Out = (Coin In × (10000 - redeemFeeBps)) / Oracle Price / 10000
+```
+
+The fee stays with free debt borrowers as compensation for redemption risk.
+
+## Step-by-Step Guide
+
+### Step 1: Check Redemption Capacity
+
+Before redeeming, verify:
+- **Total free debt**: Maximum amount that can be redeemed
+- **Redeemable collateral**: Collateral backing free debt positions
+- **Current redemption fee**: Percentage deducted from output
+
+```solidity
+// Check redeemable capacity
+uint totalFreeDebt = lender.totalFreeDebt();
+uint redeemFeeBps = lender.redeemFeeBps();
+```
+
+### Step 2: Calculate Expected Output
+
+Preview how much collateral you'll receive:
+
+```solidity
+// Get expected collateral output
+uint amountOut = lender.getRedeemAmountOut(coinAmount);
+```
+
+### Step 3: Execute Redemption
+
+1. Enter the amount of Coin to redeem
+2. Set minimum collateral output (slippage protection)
+3. Approve Coin spending (first time only)
+4. Confirm the redemption transaction
+
+```solidity
+// Redeem Coin for collateral
+uint collateralReceived = lender.redeem(coinAmount, minCollateralOut);
+```
+
+## Arbitrage Opportunity
+
+Redemptions create an arbitrage opportunity when the stablecoin trades below $1:
+
+1. **Buy** Coin at $0.98 on DEX
+2. **Redeem** Coin for $1 worth of collateral (minus ~0.3% fee)
+3. **Profit**: ~$0.017 per Coin (1.7% return)
+
+This arbitrage helps restore the peg by:
+- Increasing buy pressure on secondary markets
+- Reducing Coin supply through redemption burns
+- Reducing free debt in the system
+
+## Impact on Free Debt Borrowers
+
+When you redeem, free debt borrowers experience:
+
+### Debt Reduction
+- Total free debt decreases by your redemption amount
+- Each borrower's debt drops proportionally to their share
+
+### Collateral Seizure
+- Collateral is taken pro-rata from all free debt positions
+- Borrowers keep the redemption fee portion
+
+### Example
+```
+Before:
+- Alice: 600 debt, 1000 collateral (free)
+- Bob: 400 debt, 800 collateral (free)
+- Total: 1000 debt
+
+Redemption: 100 Coin at 0.3% fee
+
+After:
+- Alice: 540 debt (-60), ~940 collateral (free)
+- Bob: 360 debt (-40), ~760 collateral (free)
+- Total: 900 debt
+```
+
+## Redemption Limitations
+
+Redemptions may be limited or unavailable when:
+
+### Insufficient Free Debt
+- Cannot redeem more than `totalFreeDebt`
+- System needs borrowers in free debt mode
+
+### Oracle Staleness
+- Redemptions disabled if oracle price is stale
+- Protects against price manipulation
+
+### Insufficient Redeemable Collateral
+- Must have enough collateral from free debt positions
+- Paid debt collateral is never touched
+
+## Quick Reference
+
+| Function | Description |
+|----------|-------------|
+| `redeem(amountIn, minAmountOut)` | Redeem Coin for collateral |
+| `getRedeemAmountOut(amountIn)` | Preview collateral output |
+| `totalFreeDebt()` | Max redeemable amount |
+| `redeemFeeBps()` | Current redemption fee |
+
+## Comparison: Redemption vs PSM Sell
+
+| Feature | Redemption | PSM Sell |
+|---------|------------|----------|
+| Output | Collateral asset | PSM asset (e.g., USDC) |
+| Price | Oracle price - fee | 1:1 ratio |
+| Availability | Requires free debt | Requires PSM liquidity |
+| Fee | 0-3% | None |
+| Use case | Arbitrage, collateral exposure | Stablecoin exit |
+
+## Risks
+
+### Slippage
+- Set appropriate `minAmountOut` to protect against price changes
+- Oracle price may update between transaction submission and execution
+
+### Gas Costs
+- Consider gas costs when calculating arbitrage profitability
+- Batch redemptions if economical
+
+### Front-running
+- Public mempool transactions may be front-run
+- Use private transaction services for large redemptions
+
+## Related
+
+- [Redemptions Protocol](/protocol/redemptions)
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)
+- [Lender Contract Reference](/reference/Lender)

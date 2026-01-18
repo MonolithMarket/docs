@@ -26,7 +26,10 @@
               "guides/overview",
               "guides/deploy-stablecoin",
               "guides/borrow-stablecoins",
-              "guides/buy-and-stake-stablecoins"
+              "guides/buy-and-stake-stablecoins",
+              "guides/redeem-stablecoins",
+              "guides/liquidate-positions",
+              "guides/operate-stablecoin"
             ]
           },
           {

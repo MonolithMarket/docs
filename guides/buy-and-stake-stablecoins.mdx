@@ -1,63 +1,188 @@
 ---
 title: 'Buy and Stake Stablecoins'
-description: 'How to acquire and stake stablecoins for rewards'
+description: 'How to acquire stablecoins and earn yield by staking'
 icon: 'piggy-bank'
 ---
 
 # Buy and Stake Stablecoins
 
+This guide covers how to acquire Monolith stablecoins and earn yield by staking them in the protocol's Vault.
+
 ## Acquiring Stablecoins
 
-### Direct Purchase
-1. Use decentralized exchanges (Uniswap, SushiSwap, etc.)
-2. Find your desired stablecoin pair
-3. Execute the swap transaction
+There are three main ways to acquire Monolith stablecoins:
 
-### Protocol Minting
-1. Use the Monolith interface to mint stablecoins
-2. Deposit collateral as backing
-3. Mint the desired amount
+### 1. Peg Stability Module (PSM)
 
-## Staking Process
+If the instance has a PSM configured, you can instantly swap a pegged asset (e.g., USDC) for the stablecoin at a 1:1 ratio.
 
-### Step 1: Access Staking
-Navigate to the staking section of the Monolith interface.
+**How to use the PSM:**
 
-### Step 2: Choose Stablecoin
-Select which stablecoin you want to stake.
+1. Navigate to the PSM interface for your chosen stablecoin
+2. Enter the amount of the PSM asset (e.g., USDC) to swap
+3. Review the output amount (may include a small fee near immutability deadline)
+4. Approve the PSM asset (first time only)
+5. Confirm the swap transaction
 
-### Step 3: Enter Amount
-Specify the amount you want to stake.
+**PSM Buy Fee:**
+- Zero fee during the first half of the immutability period
+- Fee ramps from 0% to 1% during the second half of the immutability period
+- Fee goes to local reserves
 
-### Step 4: Confirm Staking
-Review terms and confirm the staking transaction.
+```solidity
+// Example: Buy stablecoins with USDC
+lender.buy(usdcAmount, minCoinOut);
+```
 
-## Rewards and Benefits
+### 2. Decentralized Exchanges
 
-### Staking Rewards
-- Earn protocol fees
-- Receive governance tokens
-- Participate in revenue sharing
+Purchase stablecoins on DEXs like Uniswap, Curve, or other supported exchanges:
 
-### Additional Benefits
-- Enhanced protocol stability
-- Governance participation rights
-- Priority access to new features
+1. Connect your wallet to the DEX
+2. Select the stablecoin as the output token
+3. Choose your input token
+4. Execute the swap
 
-## Managing Your Stake
+### 3. Borrow Against Collateral
 
-### Monitoring
-- Track staking rewards
-- Monitor stake health
-- View governance proposals
+Mint new stablecoins by depositing collateral and borrowing. See the [Borrow Guide](/guides/borrow-stablecoins) for details.
 
-### Adjustments
-- Add more stake
-- Unstake partially or fully
-- Claim accumulated rewards
+## Staking for Yield
 
-## Important Considerations
+Staking deposits your stablecoins into the instance's ERC-4626 Vault, earning yield from borrower interest payments.
 
-- Staking locks your tokens
-- Unstaking may have waiting periods
-- Rewards are subject to protocol performance
+### How Staking Yield Works
+
+1. **Paid debt borrowers** pay interest continuously
+2. Interest (minus protocol fees) is minted as new stablecoins to the Vault
+3. Your share of the Vault grows as interest accumulates
+4. Withdraw at any time to claim your principal plus earned yield
+
+### Step 1: Access the Vault
+
+Navigate to the staking interface for your chosen stablecoin instance. Each instance has its own Vault with naming convention:
+- Vault token name: "Staked [Name]" (e.g., "Staked Monolith USD")
+- Vault token symbol: "s[Symbol]" (e.g., "sUSD")
+
+### Step 2: Deposit Stablecoins
+
+1. Enter the amount of stablecoins to stake
+2. Approve the stablecoin (first time only)
+3. Confirm the deposit transaction
+
+```solidity
+// Deposit stablecoins and receive vault shares
+vault.deposit(coinAmount, receiverAddress);
+
+// Or specify shares to mint
+vault.mint(sharesToMint, receiverAddress);
+```
+
+<Note>
+The first deposit to a Vault burns a small amount (0.01 Coin) to initialize share pricing and prevent inflation attacks.
+</Note>
+
+### Step 3: Monitor Your Position
+
+Your staked position earns yield continuously. Track:
+
+- **Shares owned**: Your Vault token balance
+- **Current value**: Shares × share price (increases as yield accrues)
+- **APY**: Based on current borrow rate and total staked vs total paid debt
+
+The **supply rate** depends on:
+- Current borrow rate (higher = more yield)
+- Ratio of total staked to total paid debt (lower = more yield per staker)
+- Protocol fee deductions
+
+### Step 4: Withdraw
+
+Withdraw your staked stablecoins plus accumulated yield at any time:
+
+1. Enter the amount to withdraw (in stablecoins or shares)
+2. Confirm the withdrawal transaction
+
+```solidity
+// Withdraw specific amount of stablecoins
+vault.withdraw(coinAmount, receiverAddress, ownerAddress);
+
+// Or redeem specific amount of shares
+vault.redeem(shareAmount, receiverAddress, ownerAddress);
+```
+
+## Understanding Yield
+
+### Yield Sources
+
+- **Borrower interest**: Primary source from paid debt borrowers
+- Interest is minted directly to the Vault as new stablecoins
+
+### Yield Distribution
+
+Interest generated is split:
+1. **Local reserve fee**: Goes to instance operator (0-10%)
+2. **Global protocol fee**: Goes to Monolith protocol (0-10%)
+3. **Staker yield**: Remaining amount minted to Vault
+
+### Yield Considerations
+
+- **Higher staked ratio** = Lower yield per staker (yield is shared among more depositors)
+- **Higher borrow rate** = Higher yield (more interest generated)
+- **Total paid debt** = Base for interest calculation (more paid debt = more interest)
+
+If total staked exceeds total paid debt, the supply rate is capped at the borrow rate to prevent unsustainable yields.
+
+## Vault Token (sToken)
+
+When you stake, you receive Vault shares (sTokens):
+
+- **Transferable**: Can be sent to other addresses
+- **Composable**: Can be used in other DeFi protocols
+- **Yield-bearing**: Value increases as interest accrues
+- **ERC-4626 compliant**: Standard vault interface
+
+### Share Pricing
+
+```
+Share Price = Total Assets / Total Shares
+```
+
+Where Total Assets = stablecoins held by the Vault (principal + accumulated interest).
+
+## Example Workflow
+
+1. **Acquire**: Swap 10,000 USDC for 10,000 Coin via PSM
+2. **Stake**: Deposit 10,000 Coin, receive ~10,000 sToken shares
+3. **Earn**: After one year at 5% APY, shares are worth ~10,500 Coin
+4. **Withdraw**: Redeem shares for 10,500 Coin
+
+## Risks
+
+### Interest Rate Risk
+- Yield depends on the borrow rate which fluctuates based on market conditions
+- Low borrowing demand = low yields
+
+### Smart Contract Risk
+- Funds are held in protocol smart contracts
+- Review [security information](/security/overview) and [audits](/security/audits)
+
+### Peg Risk
+- If the stablecoin trades below $1, your Coin holdings lose dollar value
+- Redemption mechanisms help maintain the peg
+
+## Quick Reference
+
+| Action | Function | Notes |
+|--------|----------|-------|
+| Buy via PSM | `lender.buy(assetIn, minCoinOut)` | Swap pegged asset for Coin |
+| Sell via PSM | `lender.sell(coinIn, minAssetOut)` | Swap Coin for pegged asset |
+| Stake | `vault.deposit(assets, receiver)` | Deposit Coin, get shares |
+| Unstake | `vault.withdraw(assets, receiver, owner)` | Withdraw Coin + yield |
+| Check balance | `vault.balanceOf(address)` | Your share balance |
+| Check value | `vault.previewRedeem(shares)` | Coin value of shares |
+
+## Related
+
+- [Peg Stability Module](/protocol/peg-stability-module)
+- [Interest Rate Controller](/protocol/interest-rate-controller)
+- [Vault Contract Reference](/reference/Vault)

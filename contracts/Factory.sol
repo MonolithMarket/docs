@@ -131,6 +131,10 @@ contract Factory {
         uint256 timeUntilImmutability;
         address operator;
         address manager;
+        uint64 halfLife;
+        uint16 targetFreeDebtRatioStartBps;
+        uint16 targetFreeDebtRatioEndBps;
+        uint16 redeemFeeBps;
     }
 
     function deploy(DeployParams memory params) external returns (address lender, address coin, address vault) {
@@ -152,7 +156,11 @@ contract Factory {
             manager: params.manager,
             collateralFactor: params.collateralFactor,
             minDebt: params.minDebt,
-            timeUntilImmutability: params.timeUntilImmutability
+            timeUntilImmutability: params.timeUntilImmutability,
+            halfLife: params.halfLife,
+            targetFreeDebtRatioStartBps: params.targetFreeDebtRatioStartBps,
+            targetFreeDebtRatioEndBps: params.targetFreeDebtRatioEndBps,
+            redeemFeeBps: params.redeemFeeBps
         });
         bytes memory lenderData = abi.encode(lenderParams);
         bytes memory vaultData = abi.encode(params.name, params.symbol, lender);
