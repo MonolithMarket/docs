@@ -1,0 +1,69 @@
+---
+title: 'Paid vs Free Debt'
+description: 'Understanding the difference between paid (non-redeemable) and free (redeemable) debt positions.'
+icon: 'dollar-sign'
+---
+
+# Overview
+
+Monolith offers borrowers two borrowing modes that behave differently under interest accrual and redemptions:
+
+- **Paid debt**: interest‑paying borrowing that funds yield to stakers while being exempt from redemptions.
+- **Free debt**: non‑interest‑paying borrowing that is eligible to be repaid by external redemptions, with collateral seized pro‑rata from participants.
+
+Both modes use the same collateralization and solvency rules; the choice primarily affects eligibility for redemptions and the cost of the loan (interest rate).
+
+# Paid Debt
+
+## Characteristics
+- Accrues interest continuously on the outstanding debt.
+- Interest paid by borrowers funds staking yield minted to the instance `Vault`, after fees.
+- Collateral is protected from third-party redemptions.
+
+
+## When to choose paid debt
+- You prefer predictable ownership of your collateral (not subject to redemptions).
+- You are comfortable paying interest in exchange for stability of your collateral and debt.
+- You are a passive borrower who prefers not to actively manage and rebalance their position.
+
+# Free Debt
+
+## Characteristics
+- Does not accrue interest; your loan is always free.
+- Your position becomes part of the “redeemable” pool: external users can redeem `Coin` for collateral from this shared pool.
+- When a redemption occurs:
+  - Global free debt decreases by the redeemed `Coin` amount (your computed debt falls pro‑rata with the pool).
+  - An equivalent value of collateral (minus a small redemption fee kept by you) is seized pro‑rata from all free‑debt borrowers and sent to the redeemer.
+
+## When to choose free debt
+- You optimize for cost of capital and want zero interest accrual at the cost of more active management.
+- You accept that part of your collateral can be redeemed away as your debt is repaid by the third-parties.
+- You want to support redemption‑driven peg stability and potentially profit from redempmtion fees.
+- You want your debt to decrease automatically during periods of active redemptions.
+
+# Switching between modes
+
+- You can toggle between paid and free debt at any time by switching your “redeemable” status.
+- You may also specify a delegate address that may toggle modes on your behalf. Be careful because your delegate also has access to your collateral and may borrow on your behalf.
+
+# Interest and fees at a glance
+
+- Paid debt funds staking yield: interest is periodically converted into newly minted `Coin` credited to the instance `Vault` (stakers), after deducting protocol and local reserve fees.
+- Free debt pays no interest; instead, redemptions repay free debt and seize collateral value pro‑rata from the free‑debt pool.
+- A small redemption fee reduces the collateral a redeemer receives; this fee is kept by the free borrowers and helps protect against adverse selection during redemptions.
+ 
+ # How borrower choices guide the interest rate
+ 
+ - The protocol targets a healthy range for the share of “free debt” in the system. Think of this as a band with a lower and an upper threshold.
+ - If the free‑debt share falls below the lower threshold (too little free debt), the borrow rate rises over time. This nudges borrowers to either repay paid debt or switch to free debt, restoring balance and funding more yield while demand is strong.
+ - If the free‑debt share rises above the upper threshold (too much free debt), the borrow rate decays toward a low floor, making paid debt cheaper and encouraging borrowers to switch back into paid mode or borrow more there.
+ - Inside the target band, the rate holds steady. Adjustments are smooth and time‑based (half‑life‑like), avoiding sudden jumps.
+ - Practical levers for borrowers:
+   - Moving to free increases the system’s free‑debt share; moving to paid decreases it.
+   - New borrowing in paid reduces the free‑debt share; redemptions reduce outstanding free debt and can also affect the mix.
+ - The result is a self‑correcting loop: borrowers’ mode choices collectively steer rates, and rates in turn steer future choices, stabilizing the system around the target equilibrium.
+
+# Solvency and liquidations (applies to both)
+
+- Both modes share the same collateralization rules and oracle‑based solvency checks.
+- If your position becomes unsafe, it can be liquidated irrespective of mode.

@@ -1,0 +1,49 @@
+---
+title: 'Immutability Deadline'
+description: 'Time‑locked switch that permanently disables sensitive controls, making an instance credibly neutral after launch.'
+icon: 'hourglass'
+---
+
+# Immutability Deadline
+
+## Overview
+
+Each instance has an immutability deadline: a timestamp after which sensitive parameters and admin actions permanently lock. This turns the instance into a credibly‑neutral system with no ongoing configuration powers over protocol behavior.
+
+## Why it exists
+
+- Early flexibility: Gives operators the ability to finetune parameters after launch.
+- Predictability: Once locked, users can rest assured that the rules will never change.
+- Safety: Eliminates the possibility of human error, building Lindiness over time.
+
+## How it’s set
+
+- On deployment, the deadline is set to `deployTimestamp + timeUntilImmutability`.
+- `timeUntilImmutability` is bounded (less than 4 years) and can be `0` for immediate immutability at launch.
+- Before the deadline, the operator may call an early lock by calling `enableImmutabilityNow()` (irreversible, cannot be delayed or reopened later).
+
+## What the deadline locks
+
+After the deadline passes (or is enabled early), the following become permanently unavailable:
+
+- Interest policy knobs:
+  - Half‑life of rate changes (exponential rate)
+  - Target free‑debt ratio band
+  - Redemption fee basis points
+- PSM‑related mutability:
+  - The buy path (asset→coin) through the PSM wrapper
+
+These gates ensure the instance’s monetary policy surface cannot be altered after the lock, and that exposure to the PSM asset can no longer increase.
+
+## What remains adjustable (intentionally)
+
+Only fee-related actions remain accessible by the operator:
+
+- Operator/manager rotation
+- Local reserve fee bps for the instance operator (bounded by a 10% cap)
+- Pulling the instance operator fee
+
+## Related
+
+- [Interest Rate Controller](/protocol/interest-rate-controller)
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)

@@ -1,0 +1,72 @@
+---
+title: 'InterestModel'
+description: 'Dynamic interest rate calculation for borrowing'
+icon: 'percent'
+---
+
+# Interest Model
+
+The InterestModel contract calculates the borrow rate and accrued interest using an exponential controller driven by the free‑debt ratio. It is a shared, pure math contract used by all `Lender` instances.
+
+[Contract implementation](https://github.com/MonolithMarket/Monolith/blob/main/src/InterestModel.sol)
+
+## Core Calculation Function
+
+### calculateInterest
+
+```solidity
+function calculateInterest(
+    uint _totalPaidDebt,
+    uint _lastRate,
+    uint _timeElapsed,
+    uint _expRate,
+    uint _lastFreeDebtRatioBps,
+    uint _targetFreeDebtRatioStartBps,
+    uint _targetFreeDebtRatioEndBps
+) external pure returns (uint currBorrowRate, uint interest)
+```
+
+Calculates the new borrow rate and the interest accrued over `_timeElapsed` seconds using an exponential controller around a target free‑debt ratio band.
+
+**Parameters:**
+- `_totalPaidDebt`: Current paid (interest‑bearing) debt principal `D`.
+- `_lastRate`: Previous borrow rate mantissa `r_old` (APR scaled by 1e18).
+- `_timeElapsed`: Seconds since last accrual `dt`.
+- `_expRate`: Exponential rate constant `k` (derived from half‑life via `wadLn(2e18)/halfLife`).
+- `_lastFreeDebtRatioBps`: Last observed free‑debt ratio `f` in basis points (0–10000), including PSM assets.
+- `_targetFreeDebtRatioStartBps`, `_targetFreeDebtRatioEndBps`: Target band `[f_start, f_end]` in basis points.
+
+**Returns:**
+- `currBorrowRate`: Updated borrow rate mantissa `r_new` (APR scaled by 1e18).
+- `interest`: Accrued interest amount over the interval.
+
+**Algorithm summary:**
+- Let `g = exp(-k * dt)`.
+- If `f < f_start` (below band): rate grows exponentially
+  - `r_new = r_old / g`
+  - `interest = D * (r_new - r_old) / (k * 365 days)`
+- Else if `f > f_end` (above band): rate decays exponentially toward a floor
+  - `r_new = max(r_old * g, r_min)` with `r_min = 0.5% APR`
+  - If the decay hits the floor during `dt`:
+    - `t_min = -ln(r_min / r_old) / k`
+    - `interest = D * ((r_old - r_min) / k + r_min * (dt - t_min)) / (365 days)`
+  - Else:
+    - `interest = D * (r_old - r_new) / (k * 365 days)`
+- Else (inside band): hold rate constant
+  - `r_new = r_old`
+  - `interest = D * r_old * dt / (365 days * 1e18)`
+
+## Constants
+
+- `MIN_RATE = 0.5% APR` (as `5e15` in 1e18 mantissa) — lower bound for the borrow rate.
+
+## Integration Notes
+
+- The model is stateless and pure; it is called externally by `Lender` using `try/catch` so accrual can safely skip if anything unexpected happens.
+- Each `Lender` stores its own `expRate` (set via half‑life) and target band; these can be adjusted before the immutability deadline.
+- One shared `InterestModel` instance is deployed by the `Factory` and referenced by all `Lender` contracts.
+
+## Security Considerations
+
+- Pure math (no state) and no external calls inside the function.
+- Uses wad math (`wadExp`, `wadLn`) and explicit floor handling to avoid overflows and negative rates.

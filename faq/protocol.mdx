@@ -1,0 +1,105 @@
+---
+title: 'Protocol FAQ'
+description: 'Frequently asked questions about protocol mechanics'
+sidebar: false
+icon: 'book'
+---
+
+# Protocol Mechanics
+
+<AccordionGroup>
+  <Accordion title="How does the protocol maintain stablecoin peg?">
+    Monolith uses a multi-layered approach to maintain peg stability:
+
+    1. **Peg Stability Module (PSM)**: Automated buy/sell mechanisms that add/remove liquidity during volatility
+    2. **Dynamic Interest Rates**: Higher rates during high utilization discourage excessive borrowing
+    3. **Redemption Mechanisms**: Users can redeem stablecoins for collateral at market rates
+    4. **Arbitrage Incentives**: Price discrepancies create profit opportunities for arbitrageurs
+  </Accordion>
+
+  <Accordion title="What is the difference between paid and free debt?">
+    **Paid Debt:**
+    - Accrues interest over time based on utilization
+    - Requires active management and monitoring
+    - Higher potential returns through leveraged positions
+    - Subject to liquidation risk
+
+    **Free Debt:**
+    - No interest accrual
+    - Lower maintenance requirements
+    - More conservative risk profile
+    - Limited by available free debt capacity
+  </Accordion>
+
+  <Accordion title="How are interest rates determined?">
+    Interest rates are calculated dynamically using our InterestModel contract:
+
+    - **Base Rate**: Minimum borrowing rate (typically 0%)
+    - **Utilization Multiplier**: Rate increases with protocol utilization
+    - **Kink Point**: Accelerated rate increases above 80% utilization
+    - **Time-based**: Rates are continuously updated
+  </Accordion>
+
+  <Accordion title="What is the collateral factor?">
+    The collateral factor determines how much you can borrow against your collateral:
+
+    - Typically ranges from 70-90% (borrow 70-90% of collateral value)
+    - Lower factors = more conservative (less borrowing power)
+    - Higher factors = more leverage (higher risk)
+    - Factors adjust based on asset volatility and protocol health
+  </Accordion>
+
+  <Accordion title="How do liquidations work?">
+    Liquidations protect the protocol by closing undercollateralized positions:
+
+    1. **Trigger**: Position falls below liquidation threshold (typically 110-120% collateralization)
+    2. **Liquidator**: Any user can liquidate the position
+    3. **Incentive**: Liquidators receive a bonus (typically 5-10%) on the collateral they repay
+    4. **Process**: Debt is repaid, remaining collateral distributed to liquidator and borrower
+  </Accordion>
+
+  <Accordion title="What is the immutability deadline?">
+    The immutability deadline is a time-lock mechanism that prevents certain protocol changes after a set period:
+
+    - **Purpose**: Ensures protocol stability and user trust
+    - **Timeline**: Typically 6-12 months from deployment
+    - **Effect**: Core parameters become immutable
+    - **Governance**: Only emergency changes allowed after deadline
+  </Accordion>
+
+  <Accordion title="How does the redemption mechanism work?">
+    Users can redeem stablecoins for underlying collateral:
+
+    - **Redemption Rate**: Based on protocol's debt-to-collateral ratio
+    - **Fee**: Small redemption fee (typically 0.03%)
+    - **Process**: Burn stablecoins, receive proportional collateral
+    - **Purpose**: Provides exit liquidity and peg stability
+  </Accordion>
+
+  <Accordion title="What is bad debt socialization?">
+    Bad debt socialization handles unrecoverable losses:
+
+    - **Trigger**: Positions where debt exceeds recoverable collateral value
+    - **Process**: Losses distributed proportionally across all borrowers
+    - **Mechanism**: Reduces everyone's debt by the same percentage
+    - **Purpose**: Maintains protocol solvency without external bailouts
+  </Accordion>
+
+  <Accordion title="How does the protocol handle price feeds?">
+    Price feeds are critical for accurate valuations:
+
+    - **Chainlink Oracles**: Primary price source for major assets
+    - **Fallback Mechanisms**: Multiple oracle sources for redundancy
+    - **Staleness Checks**: Automatic deactivation during prolonged outages
+    - **Update Frequency**: Real-time updates with configurable heartbeats
+  </Accordion>
+
+  <Accordion title="What are the protocol fees?">
+    Multiple fee types exist:
+
+    - **Borrowing Fees**: Interest paid on debt positions
+    - **Redemption Fees**: Small fee for redeeming stablecoins
+    - **PSM Fees**: Fees for buying/selling through the stability module
+    - **Protocol Fees**: Portion of interest retained by protocol (typically 10%)
+  </Accordion>
+</AccordionGroup>

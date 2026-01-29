@@ -1,0 +1,235 @@
+---
+title: 'Integration Guide'
+description: 'Technical guide for integrating with Monolith protocol'
+icon: 'plug'
+---
+
+# Integration Guide
+
+## Overview
+
+This guide provides technical details for integrating with the Monolith protocol.
+
+## Prerequisites
+
+- Solidity ^0.8.0
+- Web3.js or Ethers.js
+- Basic understanding of DeFi protocols
+
+## Smart Contract Integration
+
+### Importing Interfaces
+
+```solidity
+import "@monolith/contracts/interfaces/IStablecoinFactory.sol";
+import "@monolith/contracts/interfaces/IInterestRateController.sol";
+import "@monolith/contracts/interfaces/IPegStabilityModule.sol";
+```
+
+### Basic Integration Example
+
+```solidity
+contract MyProtocol {
+    IStablecoinFactory public factory;
+    IInterestRateController public controller;
+
+    constructor(address _factory, address _controller) {
+        factory = IStablecoinFactory(_factory);
+        controller = IInterestRateController(_controller);
+    }
+
+    function createStablecoin(
+        string memory name,
+        string memory symbol,
+        address collateral
+    ) external returns (address) {
+        return factory.createStablecoin(name, symbol, collateral);
+    }
+}
+```
+
+## Frontend Integration
+
+### Connecting with Web3
+
+```javascript
+import { ethers } from 'ethers';
+import { StablecoinFactory__factory } from '@monolith/contracts';
+
+// Connect to provider
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = provider.getSigner();
+
+// Connect to contract
+const factoryAddress = '0x...'; // From contract addresses page
+const factory = StablecoinFactory__factory.connect(factoryAddress, signer);
+```
+
+### Deploying a Stablecoin
+
+```javascript
+async function deployStablecoin(name, symbol, collateralAddress) {
+    try {
+        const tx = await factory.createStablecoin(name, symbol, collateralAddress);
+        await tx.wait();
+
+        const stablecoinAddress = await factory.getStablecoin(name);
+        console.log('Stablecoin deployed at:', stablecoinAddress);
+
+        return stablecoinAddress;
+    } catch (error) {
+        console.error('Deployment failed:', error);
+        throw error;
+    }
+}
+```
+
+### Borrowing Stablecoins
+
+```javascript
+async function borrowStablecoins(stablecoinAddress, amount, collateralAmount) {
+    // First deposit collateral
+    const depositTx = await vault.deposit(collateralAddress, collateralAmount);
+    await depositTx.wait();
+
+    // Then borrow stablecoins
+    const borrowTx = await vault.borrow(stablecoinAddress, amount);
+    await borrowTx.wait();
+
+    return borrowTx.hash;
+}
+```
+
+## API Integration
+
+### REST API Endpoints
+
+```bash
+# Get protocol statistics
+GET /api/v1/protocol/stats
+
+# Get user positions
+GET /api/v1/users/{address}/positions
+
+# Get stablecoin information
+GET /api/v1/stablecoins/{address}
+```
+
+### WebSocket Events
+
+```javascript
+// Connect to WebSocket
+const ws = new WebSocket('wss://api.monolith.fi/v1/events');
+
+// Listen for liquidation events
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'liquidation') {
+        handleLiquidation(data);
+    }
+};
+```
+
+## SDK Usage
+
+### Installation
+
+```bash
+npm install @monolith/sdk
+```
+
+### Basic Usage
+
+```javascript
+import { MonolithSDK } from '@monolith/sdk';
+
+const sdk = new MonolithSDK({
+    provider: window.ethereum,
+    network: 'mainnet'
+});
+
+// Get all stablecoins
+const stablecoins = await sdk.getStablecoins();
+
+// Create a new stablecoin
+const tx = await sdk.createStablecoin({
+    name: 'My Stablecoin',
+    symbol: 'MST',
+    collateral: '0xA0b86a33E6441e88C5F2712C3E9b74B8F0F7F5d8'
+});
+```
+
+## Error Handling
+
+### Common Errors
+
+```javascript
+try {
+    await factory.createStablecoin(name, symbol, collateral);
+} catch (error) {
+    if (error.message.includes('Insufficient collateral')) {
+        // Handle insufficient collateral error
+    } else if (error.message.includes('Invalid parameters')) {
+        // Handle invalid parameters error
+    } else {
+        // Handle other errors
+    }
+}
+```
+
+## Testing
+
+### Local Development
+
+```bash
+# Start local blockchain
+npm run chain
+
+# Deploy contracts locally
+npm run deploy:local
+
+# Run tests
+npm test
+```
+
+### Testnet Deployment
+
+```javascript
+// Use testnet addresses for development
+const TESTNET_ADDRESSES = {
+    factory: '0x...',
+    controller: '0x...'
+};
+```
+
+## Best Practices
+
+### Security
+- Always validate contract addresses
+- Use multicall for batch operations
+- Implement proper error handling
+- Test thoroughly on testnets
+
+### Performance
+- Use events for monitoring changes
+- Implement caching for frequently accessed data
+- Batch transactions when possible
+- Monitor gas usage
+
+### User Experience
+- Provide clear error messages
+- Show loading states during transactions
+- Implement transaction confirmations
+- Add wallet connection status
+
+## Support
+
+### Developer Resources
+- [GitHub Repository](https://github.com/MonolithMarket)
+- [Discord Developer Channel](https://discord.gg/TBNcPpvJHZ)
+- [Technical Documentation](https://docs.monolith.fi)
+
+### Getting Help
+- Open issues on GitHub
+- Ask questions in Discord
+- Check existing integrations for examples

@@ -1,0 +1,57 @@
+---
+title: 'Peg Stability Module'
+description: 'Direct convertibility between Coin and a reference asset to cushion the peg and provide exit liquidity.'
+icon: 'hand-holding-dollar'
+---
+
+# Peg Stability Module
+
+## Overview
+
+The Peg Stability Module (PSM) gives every instance an optional, direct convertibility path between its `Coin` and a reference asset (`psmAsset`), optionally held via an ERC‑4626 vault (`psmVault`). It cushions the peg, offers predictable exit liquidity, and can harvest yield if a vault is used.
+
+Key ideas:
+
+- Optional per instance: some instances may not enable a PSM.
+- 1:1 nominal conversion (subject to decimals and a temporary buy fee) without relying on external liquidity.
+- After the immutability deadline, exposure cannot increase: the buy path is disabled; the sell path remains available.
+
+## How it works
+
+There are two flows.
+
+### Sell (Coin → Asset) — before and after immutability deadline
+
+1. You send `Coin` to the instance.
+2. The instance burns your `Coin` and returns `psmAsset` one‑for‑one (with decimals conversion), subject to available `psmAsset` liquidity.
+3. If a `psmVault` is configured, assets are withdrawn from the vault; otherwise they are sent directly from the instance.
+
+Effect: If `Coin` trades below the reference asset, arbitrageurs can buy `Coin` on the secondary market to sell it into the PSM and lift price back up.
+
+### Buy (Asset → Coin) — only before immutability deadline
+
+1. You send `psmAsset` to the instance.
+2. If a `psmVault` is configured, the asset is deposited; otherwise the instance holds it.
+3. The instance mints `Coin` to you, one‑for‑one (with decimals conversion), less a temporary buy fee that may apply.
+
+Effect: If `Coin` trades above the reference asset during the launch window, arbitrageurs can buy `Coin` from the PSM to sell it on the market and pull price back down.
+
+After the immutability deadline, this buy path is disabled to prevent increasing exposure to the reference asset.
+
+## Fees and pricing
+
+- Conversion price: nominally 1:1 against the reference asset, with precise decimals handling (e.g., 18‑dec `Coin` vs 6‑dec `psmAsset`).
+- Buy fee: during the second half of the immutability window, a linear fee ramps from 0 bps to 100 bps (max 1%). The fee is deducted from `Coin` out and credited to instance local reserves. Before halfway, the buy fee is 0; after the deadline, buys are disabled entirely.
+- Sell fee: none. (Redemption fees are separate and apply only to the redemption mechanism, not the PSM.)
+
+## Reserves and profit
+
+- `freePsmAssets` tracks how many reference assets back future PSM sells.
+- If a `psmVault` is used, or if the `psmAsset` is rebasing, passive gains are periodically recognized and sent to local reserves. This accrues value to the instance operator.
+
+## Effect on free‑debt ratio and rates
+
+- The system’s free‑debt ratio treats on‑hand PSM assets as part of exit liquidity. Internally, the ratio includes both free debt and `freePsmAssets` in the numerator.
+- When `freePsmAssets` grows (e.g., users buy `Coin` with `psmAsset` pre‑deadline, or the vault/rebasing asset accrues profit), the free‑debt share rises. If it rises above the target band, the interest controller decays the borrow rate toward its floor.
+- When `freePsmAssets` is drawn down by sells, the free‑debt share falls. If it drops below the target band, the controller raises the borrow rate, nudging borrowers to switch to free debt or repay, rebuilding redemption capacity.
+- This coupling ensures PSM liquidity directly informs the controller about exit capacity, aligning rates with peg conditions. See [Interest Rate Controller](/protocol/interest-rate-controller).

@@ -1,0 +1,62 @@
+---
+title: 'Redemptions'
+description: 'How users can redeem stablecoins for collateral'
+icon: 'money-bill-transfer'
+---
+
+# Redemptions
+
+## Overview
+
+Redemptions let `Coin` holders exit into underlying collateral at the oracle price, less a small redemption fee. They provide reliable exit liquidity and a price floor mechanism when secondary markets are thin or dislocated.
+
+- **Exit liquidity**: Any holder can redeem `Coin` for collateral directly from the instance, regardless of DEX liquidity.
+- **Partial redeemability by design**: Only the portion of the system backed by borrowers who opted into free debt is redeemable. Paid‑debt positions are not touched. See the distinction in [Paid vs Free Debt](/protocol/paid-vs-free-debt).
+
+## How redemptions work (high‑level)
+
+1. A user submits `Coin` to redeem.
+2. The instance values the `Coin` at the oracle price and applies a small redemption fee.
+3. The protocol burns the redeemed `Coin` and transfers collateral to the redeemer.
+4. Global accounting updates:
+   - Total free debt decreases by the redeemed amount.
+   - Collateral is removed proportionally from all free‑debt borrowers (paid‑debt collateral is never used).
+   - A redemption index/epoch tracks how much collateral per free‑debt share has been redeemed. Borrowers are updated lazily on their next interaction.
+
+In effect, redemptions repay free debt with the redeemer’s `Coin`, while seizing collateral of equal value (minus fee) from the free‑debt pool.
+
+## Why only part of the system is redeemable
+
+Monolith is intentionally not “fully redeemable.” Borrowers can choose paid debt (non‑redeemable) or free debt (redeemable). This creates a robust, opt‑in redemption buffer without forcing all borrowers to accept redemption risk. It makes the system more flexible and capital‑efficient while preserving a credible exit for holders.
+
+## Interest‑rate controller and redemption liquidity
+
+The protocol targets a healthy share of free debt to back redemptions. When redemption liquidity is low (free‑debt share below target), the borrow rate rises over time, nudging borrowers to switch to free or repay paid debt. When free‑debt share is abundant, the borrow rate decays toward a low floor, encouraging paid borrowing. This feedback loop keeps redemption capacity available without human intervention. Learn more in [Interest Rate Controller](/protocol/interest-rate-controller).
+
+## Examples: impact on free‑debt borrowers
+
+- **Proportional adjustment**
+  - Setup: Two free‑debt borrowers, Alice owes 600, Bob owes 400. Total free debt = 1,000.
+  - Redemption: A user redeems 100 `Coin` at the oracle price (ignoring fees for simplicity).
+  - Result: Total free debt becomes 900. Alice’s computed debt drops to 540 (−60), Bob’s to 360 (−40). Collateral is seized pro‑rata from both to fund the redeemer.
+
+- **Effect of the redemption fee**
+  - Setup: Same as above, with a 0.3% redemption fee.
+  - Redemption: User redeems 100 `Coin`; they receive slightly less collateral than the theoretical amount.
+  - Result: The collateral shortfall (the fee) remains in the system, benefiting remaining free‑debt borrowers collectively (their net equity is marginally higher than with a zero‑fee redemption).
+
+- **Paid vs free isolation**
+  - Setup: Carol holds a paid‑debt position; Dave holds a free‑debt position of equal size.
+  - Redemption: A user redeems 50 `Coin`.
+  - Result: Only Dave’s side is affected (his debt decreases and collateral is seized pro‑rata). Carol’s paid‑debt position is untouched.
+
+## What this means for users
+
+- `Coin` holders: You can always find exit liquidity via redemption, subject to current redeemable capacity and fees.
+- Borrowers in free mode: You pay no interest, but your collateral is subject to pro‑rata redemptions. Your debt typically falls during active redemption periods.
+- Borrowers in paid mode: You pay interest but are insulated from redemptions.
+
+## Related
+
+- [Paid vs Free Debt](/protocol/paid-vs-free-debt)
+- [Interest Rate Controller](/protocol/interest-rate-controller)

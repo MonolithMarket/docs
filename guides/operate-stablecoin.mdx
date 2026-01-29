@@ -1,0 +1,247 @@
+---
+title: 'Operate a Stablecoin'
+description: 'Guide for operators and managers of Monolith stablecoin instances'
+icon: 'gear'
+---
+
+# Operate a Stablecoin
+
+This guide covers how to manage a Monolith stablecoin instance as an **operator** or **manager**. These roles have limited powers to tune parameters before the immutability deadline.
+
+## Roles Overview
+
+### Operator
+The operator has the highest instance-level authority:
+- Can adjust all tunable parameters
+- Can set local reserve fees
+- Can transfer operator role
+- Can appoint and remove managers
+- Can trigger immediate immutability
+- Can pull local reserves
+
+### Manager
+The manager has delegated authority from the operator:
+- Can adjust interest rate parameters
+- Cannot modify fees or transfer roles
+- Useful for day-to-day parameter management
+
+Both roles become powerless after the **immutability deadline**.
+
+## Parameters You Can Adjust
+
+All parameter changes must occur **before the immutability deadline**.
+
+### Interest Rate Parameters
+
+#### Half-Life
+Controls how quickly the borrow rate changes:
+
+```solidity
+function setHalfLife(uint64 halfLife) external
+```
+
+- **Range**: 12 hours to 30 days
+- **Effect**: Shorter = faster rate adjustments; longer = smoother changes
+- **Access**: Operator or Manager
+
+#### Target Free Debt Ratio
+Defines the target band for the free debt share:
+
+```solidity
+function setTargetFreeDebtRatio(uint16 startBps, uint16 endBps) external
+```
+
+- **startBps**: Lower bound (≥500 bps)
+- **endBps**: Upper bound (≤9500 bps)
+- **Effect**: Narrower band = more reactive rates; wider = more stable
+- **Access**: Operator or Manager
+
+### Fee Parameters
+
+#### Redemption Fee
+Fee charged when users redeem Coin for collateral:
+
+```solidity
+function setRedeemFeeBps(uint16 _redeemFeeBps) external
+```
+
+- **Range**: 0 to 300 bps (0-3%)
+- **Effect**: Higher = more protection for free debt borrowers; lower = better redemption UX
+- **Access**: Operator or Manager
+
+#### Local Reserve Fee
+Portion of interest directed to operator reserves:
+
+```solidity
+function setLocalReserveFeeBps(uint _feeBps) external
+```
+
+- **Range**: 0 to 1000 bps (0-10%)
+- **Effect**: Revenue for instance operator
+- **Access**: Operator only
+
+## Role Management
+
+### Transfer Operator Role
+
+Operator transfer is a two-step process for safety:
+
+```solidity
+// Step 1: Current operator sets pending operator
+function setPendingOperator(address _pendingOperator) external
+
+// Step 2: Pending operator accepts
+function acceptOperator() external
+```
+
+### Set Manager
+
+```solidity
+function setManager(address _manager) external
+```
+
+- Can be called by operator or current manager
+- Set to `address(0)` to remove manager role
+
+## Immutability
+
+### Understanding the Deadline
+
+Each instance has an immutability deadline set at deployment:
+```
+immutabilityDeadline = deployTimestamp + timeUntilImmutability
+```
+
+After this deadline:
+- No parameter changes allowed
+- Operator/manager roles become inactive
+- Instance runs autonomously forever
+
+### Triggering Early Immutability
+
+Operators can make the instance immutable immediately:
+
+```solidity
+function enableImmutabilityNow() external
+```
+
+<Warning>
+This is irreversible. Once triggered, no further parameter changes are possible.
+</Warning>
+
+## Revenue Collection
+
+### Local Reserves
+
+Pull accumulated local reserves (from interest fees and PSM profits):
+
+```solidity
+function pullLocalReserves() external
+```
+
+- Mints accrued reserves as Coin to the operator
+- Automatically accrues any PSM vault profit first
+- **Access**: Operator only
+
+### Global Reserves
+
+Global protocol reserves are pulled by the Factory operator, not the instance operator.
+
+## Operational Best Practices
+
+### Parameter Tuning
+
+#### Interest Rate Management
+1. **Monitor free debt ratio**: Track `getFreeDebtRatio()` regularly
+2. **Adjust target band**: Widen if rate volatility is too high
+3. **Tune half-life**: Increase if rates change too rapidly
+
+#### Fee Optimization
+1. **Redemption fee**: Balance borrower protection vs redemption attractiveness
+2. **Local reserve fee**: Consider sustainable revenue vs competitive rates
+
+### Monitoring Checklist
+
+| Metric | Why It Matters |
+|--------|----------------|
+| Free debt ratio | Indicates system balance and redemption liquidity |
+| Borrow rate | Affects borrower costs and staker yields |
+| Total paid debt | Base for interest generation |
+| Total free debt | Available redemption capacity |
+| Oracle health | Stale prices trigger reduce-only mode |
+| Accrued reserves | Revenue available to claim |
+
+### Emergency Procedures
+
+#### Oracle Issues
+- Monitor for staleness (>25 hours triggers reduce-only)
+- No operator action available - system handles automatically
+
+#### Rate Volatility
+- Increase half-life for slower adjustments
+- Widen target band to reduce sensitivity
+
+#### Low Free Debt
+- Consider lowering redemption fee to encourage free debt
+- Rates will naturally rise to incentivize free debt
+
+## Common Operations
+
+### Adjust Interest Model
+
+```solidity
+// Make rate changes slower
+lender.setHalfLife(7 days);
+
+// Narrow the target band for tighter control
+lender.setTargetFreeDebtRatio(2500, 3500);
+```
+
+### Update Fees
+
+```solidity
+// Reduce redemption fee to encourage redemptions
+lender.setRedeemFeeBps(100); // 1%
+
+// Increase operator revenue share
+lender.setLocalReserveFeeBps(500); // 5%
+```
+
+### Collect Revenue
+
+```solidity
+// Pull accumulated reserves
+lender.pullLocalReserves();
+```
+
+### Transfer Control
+
+```solidity
+// Transfer operator role
+lender.setPendingOperator(newOperatorAddress);
+// New operator must call: lender.acceptOperator()
+
+// Delegate to manager
+lender.setManager(managerAddress);
+```
+
+## Quick Reference
+
+| Function | Access | Deadline Required |
+|----------|--------|-------------------|
+| `setHalfLife` | Operator/Manager | Yes |
+| `setTargetFreeDebtRatio` | Operator/Manager | Yes |
+| `setRedeemFeeBps` | Operator/Manager | Yes |
+| `setLocalReserveFeeBps` | Operator | No |
+| `setPendingOperator` | Operator | No |
+| `acceptOperator` | Pending Operator | No |
+| `setManager` | Operator/Manager | No |
+| `enableImmutabilityNow` | Operator | Yes |
+| `pullLocalReserves` | Operator | No |
+
+## Related
+
+- [Stablecoin Factory](/protocol/stablecoin-factory)
+- [Interest Rate Controller](/protocol/interest-rate-controller)
+- [Immutability Deadline](/protocol/immutability-deadline)
+- [Lender Contract Reference](/reference/Lender)

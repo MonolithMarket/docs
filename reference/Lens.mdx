@@ -1,0 +1,34 @@
+---
+title: 'Lens'
+description: 'Read-only contract for accessing protocol data'
+icon: 'eye'
+---
+
+# Lens Contract
+
+The Lens contract provides read-only access to protocol data and analytics for the Monolith lending protocol.
+
+[Contract implementation](https://github.com/MonolithMarket/Monolith/blob/main/src/Lens.sol)
+
+## Functions
+
+### getCollateralOf
+
+```solidity
+function getCollateralOf(Lender _lender, address borrower) public view returns (uint256 collateralAmount)
+```
+
+Returns the borrower's effective collateral balance after applying any pending redemption adjustments (free‑debt epochs).
+
+**Parameters:**
+- `_lender`: Lender instance to read from
+- `borrower`: Address of the borrower
+
+**Returns:**
+- `uint256`: Effective collateral amount for display/accounting
+
+**Details:**
+- If the borrower has zero free‑debt shares, returns the cached collateral balance directly.
+- Otherwise, iterates up to 5 missed epochs to apply any redemption index changes, reducing collateral accordingly.
+- After iterating missed epochs, also applies the current epoch's pending redemption index.
+- Mirrors the lender's internal lazy‑update logic without mutating state.

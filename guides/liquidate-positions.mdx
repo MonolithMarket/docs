@@ -1,0 +1,235 @@
+---
+title: 'Liquidate Positions'
+description: 'How to liquidate undercollateralized positions and earn rewards'
+icon: 'gavel'
+---
+
+# Liquidate Positions
+
+Liquidation is the process of repaying debt for undercollateralized borrowers in exchange for their collateral at a discount. Liquidators help maintain system solvency and earn rewards for their service.
+
+## Overview
+
+When a borrower's position becomes unsafe (debt exceeds borrowing power), anyone can liquidate part of their debt:
+
+1. **Liquidator** repays a portion of the borrower's debt
+2. **Liquidator** receives collateral worth more than the debt repaid (the liquidation incentive)
+3. **Borrower's** debt and collateral both decrease
+4. **System** returns to a healthier state
+
+## Prerequisites
+
+To participate as a liquidator:
+
+- Hold the stablecoin (Coin) to repay debt
+- Ability to monitor positions for liquidation opportunities
+- Understanding of gas costs vs liquidation profit
+- Optional: Bot infrastructure for competitive liquidation
+
+## When Can a Position Be Liquidated?
+
+A position becomes liquidatable when:
+
+```
+Debt > Collateral Value × Collateral Factor
+```
+
+Or equivalently, when the **Loan-to-Value (LTV)** exceeds the collateral factor:
+
+```
+LTV = Debt / Collateral Value > Collateral Factor
+```
+
+### Example
+- Collateral: $10,000 worth of ETH
+- Collateral Factor: 80% (8000 bps)
+- Borrowing Power: $8,000
+- Current Debt: $8,500
+
+This position is liquidatable because $8,500 > $8,000.
+
+## Liquidation Mechanics
+
+### Liquidation Amount
+
+When liquidating, you repay up to:
+- **25%** of the borrower's total debt, OR
+- **Minimum 10,000 Coin** (whichever is larger)
+
+If the debt is less than 10,000 Coin, you can liquidate the entire position.
+
+```solidity
+// Liquidation amount calculation
+liquidatableDebt = debt / 4; // 25% of debt
+if (liquidatableDebt < 10_000e18) {
+    liquidatableDebt = debt < 10_000e18 ? debt : 10_000e18;
+}
+```
+
+### Liquidation Incentive
+
+The liquidation incentive (bonus collateral) scales with position risk:
+
+| LTV Range | Incentive |
+|-----------|-----------|
+| At collateral factor | 0% |
+| 5% above collateral factor | 10% (maximum) |
+| Linear between | 0-10% |
+
+**Example with 80% collateral factor:**
+- 80% LTV → 0% incentive
+- 82.5% LTV → 5% incentive
+- 85%+ LTV → 10% incentive
+
+### Collateral Received
+
+```
+Collateral Value Received = Debt Repaid × (1 + Incentive%)
+Collateral Amount = Collateral Value / Oracle Price
+```
+
+## Step-by-Step Guide
+
+### Step 1: Find Liquidatable Positions
+
+Monitor the protocol for positions where:
+- Debt > Borrowing Power
+- Oracle is not stale (liquidations enabled)
+
+```solidity
+// Check if position is liquidatable
+(uint price,, bool allowLiquidations) = lender.getCollateralPrice();
+uint debt = lender.getDebtOf(borrower);
+uint collateral = lender._cachedCollateralBalances(borrower);
+uint borrowingPower = price * collateral * collateralFactor / 1e18 / 10000;
+
+bool isLiquidatable = allowLiquidations && debt > borrowingPower;
+```
+
+### Step 2: Calculate Profitability
+
+Before liquidating, verify the transaction is profitable:
+
+1. Calculate expected collateral reward
+2. Subtract gas costs
+3. Account for slippage if selling collateral
+
+```solidity
+// Preview liquidation reward
+uint repayAmount = // your chosen amount
+uint incentiveBps = // calculate based on current LTV
+uint collateralValue = repayAmount * (10000 + incentiveBps) / 10000;
+uint collateralAmount = collateralValue * 1e18 / oraclePrice;
+```
+
+### Step 3: Execute Liquidation
+
+1. Approve Coin spending (first time only)
+2. Call the liquidate function with appropriate parameters
+
+```solidity
+// Execute liquidation
+uint collateralReceived = lender.liquidate(
+    borrowerAddress,
+    repayAmount,
+    minCollateralOut  // slippage protection
+);
+```
+
+### Step 4: Handle Received Collateral
+
+After liquidation, you hold the collateral token. Options:
+- Hold for exposure
+- Sell on DEX for stablecoins
+- Use as collateral elsewhere
+
+## Bad Debt Socialization
+
+If a position becomes severely undercollateralized (debt > 100× collateral value), the `writeOff` function redistributes the bad debt:
+
+1. Borrower's position is cleared (debt and collateral set to zero)
+2. Remaining debt is distributed pro-rata among all other borrowers
+3. Liquidator receives any remaining collateral
+
+This is automatically attempted after each liquidation.
+
+```solidity
+// Write-off happens automatically, or can be called directly
+lender.writeOff(borrowerAddress, receiverAddress);
+```
+
+## Liquidation Restrictions
+
+Liquidations are disabled when:
+
+### Oracle Staleness
+- Price feed hasn't updated within staleness threshold (25 hours)
+- During staleness, a price decay mechanism gradually reduces the reported price
+- After 24 additional hours of staleness, price reaches near-zero
+
+### Reduce-Only Mode
+- Triggered by stale or invalid oracle prices
+- Borrowers can only repay debt and withdraw collateral
+- No new borrows or liquidations allowed
+
+## Profit Calculation Example
+
+**Scenario:**
+- Borrower debt: 40,000 Coin
+- Collateral: 1 ETH worth $50,000
+- Collateral factor: 80%
+- Current LTV: 80% (at liquidation threshold)
+
+**Liquidation:**
+- Liquidatable: 10,000 Coin (25% = 10,000, above minimum)
+- LTV: 80% → Incentive: 0%
+- Collateral received: 10,000 / 50,000 = 0.2 ETH ($10,000)
+
+**With higher risk:**
+- Same scenario but LTV at 85%
+- Incentive: 10%
+- Collateral received: 10,000 × 1.10 / 50,000 = 0.22 ETH ($11,000)
+- Profit: $1,000 minus gas costs
+
+## Quick Reference
+
+| Function | Description |
+|----------|-------------|
+| `liquidate(borrower, repayAmount, minCollateralOut)` | Liquidate a position |
+| `writeOff(borrower, to)` | Handle severely undercollateralized positions |
+| `getCollateralPrice()` | Get price and liquidation status |
+| `getDebtOf(account)` | Get borrower's current debt |
+
+## Building a Liquidation Bot
+
+For competitive liquidation:
+
+1. **Monitor positions**: Index all borrowing positions and their health
+2. **Track prices**: Watch oracle updates for liquidation triggers
+3. **Calculate gas**: Ensure profitability after transaction costs
+4. **Use Flashbots**: Protect against front-running on supported networks
+5. **Handle reverts**: Positions may be liquidated by others between detection and execution
+
+## Risks
+
+### Competition
+- Other liquidators may execute first
+- Gas price wars during volatile markets
+
+### Oracle Lag
+- Price may move between detection and execution
+- Use appropriate slippage protection
+
+### Gas Costs
+- High gas during congestion can eliminate profits
+- Consider gas price limits
+
+### Collateral Risk
+- Received collateral may depreciate before sale
+- Consider instant DEX swaps
+
+## Related
+
+- [Liquidations Protocol](/protocol/liquidations)
+- [Bad Debt Socialization](/protocol/bad-debt-socialization)
+- [Lender Contract Reference](/reference/Lender)
