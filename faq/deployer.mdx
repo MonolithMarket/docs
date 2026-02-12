@@ -1,0 +1,42 @@
+---
+title: 'Deployer FAQ'
+description: 'Frequently asked questions for instance deployers'
+sidebar: false
+icon: 'industry'
+---
+
+# Deployer FAQ
+
+<AccordionGroup>
+
+  <Accordion title="What is `timeUntilImmutability`?">
+    It sets the immutability deadline offset from deployment. Before the deadline, you can tune half‑life, target free‑debt band, redeem fee and interest fee. After the deadline, these lock permanently. Setting it to 0 enables immediate immutability.
+  </Accordion>
+
+  <Accordion title="Which parameters are mandatory vs optional in deployment?">
+    Required: `name`, `symbol`, `collateral`, `feed`, `collateralFactor`, `minDebt`, `timeUntilImmutability`. Optional: `psmAsset`, `psmVault`, `operator`, `manager` (use `address(0)` to omit operator/manager).
+  </Accordion>
+
+  <Accordion title="When should I enable the PSM and when should I skip it?">
+    PSM provides direct Coin↔asset convertibility and can harvest vault yield, but increases exposure to the reference asset. If you want a pure collateral‑anchored design, skip PSM; if you want immediate exit liquidity and cushion for the peg, enable it.
+  </Accordion>
+
+  <Accordion title="How should I pick `collateralFactor` and `minDebt`?">
+    Choose factors in bps based on collateral volatility and liquidity. Higher factor increases borrow power but tightens liquidation buffers. `minDebt` should avoid dust accounts while not blocking legitimate use.
+  </Accordion>
+
+  <Accordion title="Who controls fees and where do they accrue?">
+    The Factory operator sets a global fee (bps) capped at 10% and per‑instance overrides. Global reserves accrue at the Lender and are pulled by the Factory’s `feeRecipient`. Local reserves accrue to the instance and are pullable by the instance operator.
+  </Accordion>
+
+  <Accordion title="Can I change operators or managers after deployment?">
+    Yes. The Factory uses two‑step operator transfer (`setPendingOperator`/`acceptOperator`). Each Lender supports operator/manager rotation; some actions require operator or operator/manager and must happen before the immutability deadline.
+  </Accordion>
+
+  <Accordion title="What is the difference between the operator and the manager?">
+    The operator has broader authority: can set/revoke pending operator, set local reserve fee bps, pull local reserves, and perform all pre‑deadline parameter updates that the manager can. The manager is a secondary role that can adjust a subset of parameters (e.g., half‑life, target free‑debt ratio, redeem fee) before immutability but cannot pull reserves or change roles.
+  </Accordion>
+
+</AccordionGroup>
+
+

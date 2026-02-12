@@ -89,9 +89,9 @@
             "group": "Frequently Asked Questions",
             "pages": [
               "faq/general",
-              "faq/protocol",
-              "faq/security",
-              "faq/technical"
+              "faq/deployer",
+              "faq/borrower",
+              "faq/holder-staker"
             ]
           }
         ]
