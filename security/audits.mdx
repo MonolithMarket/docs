@@ -6,61 +6,157 @@ icon: 'file-contract'
 
 ## Overview
 
-Monolith has undergone comprehensive security audits by leading blockchain security firms.
+Monolith's smart contracts have been reviewed by independent security firms before and during deployment. The audit program covers both the core Monolith protocol contracts and the complementary Inverse Finance components that interact with it. All findings from completed engagements have been remediated prior to deployment. The ChainSecurity re-audit of the Monolith protocol is complete and its final report is pending publication.
 
-## Audit Reports
+<Note>
+  Audit reports will be linked here upon public release. All completed engagements have been fully remediated — no outstanding findings remain unaddressed.
+</Note>
 
-### Latest Audit - [Audit Firm Name]
-- **Date**: [Date]
-- **Auditor**: [Firm Name]
-- **Scope**: Complete protocol audit
-- **Status**: ✅ Passed with minor recommendations
+---
 
-#### Key Findings
-- [List of critical findings - if any]
-- [List of high severity issues - if any]
-- [List of medium severity issues]
-- [List of low severity issues]
-- [List of informational findings]
+## Audit History
 
-#### Recommendations Implemented
-- [List of fixes and improvements made]
+### Electisec — Monolith Protocol
 
-### Previous Audits
+| | |
+|---|---|
+| **Firm** | Electisec (formerly yAudit) |
+| **Date** | May 20–27, 2025 |
+| **Status** | Complete — all findings resolved |
+| **Report** | Link forthcoming |
 
-#### Audit Round 2 - [Firm Name]
-- **Date**: [Date]
-- **Status**: ✅ All issues resolved
+**Scope**
 
-#### Audit Round 1 - [Firm Name]
-- **Date**: [Date]
-- **Status**: ✅ All issues resolved
+The Electisec engagement reviewed the five core Monolith protocol contracts:
 
-## Audit Process
+- `Vault.sol`
+- `Lender.sol`
+- `InterestModel.sol`
+- `Factory.sol`
+- `Coin.sol`
 
-### Pre-Audit Preparation
-- Code documentation
-- Test coverage requirements
-- Scope definition
+**Findings Summary**
 
-### During Audit
-- Bi-weekly status updates
-- Real-time issue tracking
-- Collaborative resolution process
+| Severity | Count | Resolved |
+|---|---|---|
+| Critical | 1 | ✓ |
+| Medium | 1 | ✓ |
+| Low | 4 | ✓ |
+| Informational | 5 | ✓ |
 
-### Post-Audit
-- Implementation of recommendations
-- Additional test coverage
-- Community disclosure
+All findings were addressed prior to deployment.
 
-## Ongoing Security
+---
 
-Beyond third-party audits, we maintain:
-- Continuous code review
-- Automated security testing
-- Bug bounty program
-- Community security contributions
+### ChainSecurity — Monolith Re-audit
+
+| | |
+|---|---|
+| **Firm** | ChainSecurity |
+| **Date** | October 2025 – March 2026 |
+| **Final code version reviewed** | March 23, 2026 |
+| **Status** | Complete — final report pending publication |
+| **Report** | Link forthcoming |
+
+**Scope**
+
+ChainSecurity conducted a full re-audit of the Monolith protocol across three iterative code versions, incorporating fixes from the initial Electisec engagement and subsequent development. The scope covered the same five core contracts:
+
+- `Factory.sol`
+- `Coin.sol`
+- `InterestModel.sol`
+- `Vault.sol`
+- `Lender.sol`
+
+The review covered precision of arithmetic operations, integration with external ERC-4626 vaults, functional correctness, and trustworthiness of the operator model.
+
+**Findings Summary**
+
+| Severity | Count |
+|---|---|
+| Critical | 0 |
+| High | 5 |
+| Medium | 5 |
+| Low | 13 |
+| Informational | 4 |
+
+<Note>
+  The full report is pending final publication. Specific finding details and remediation status will be disclosed upon release.
+</Note>
+
+---
+
+### Sherlock — jrDOLA Private Review
+
+| | |
+|---|---|
+| **Firm** | Sherlock (collaborative — Hash & Osidian) |
+| **Date** | October 13–16, 2025 |
+| **Scope** | jrDOLA (Junior Tranche, Inverse Finance) |
+| **Status** | Complete — all findings resolved |
+| **Report** | Link forthcoming |
+
+**Scope**
+
+This engagement reviewed the jrDOLA insurance layer contracts, which serve as a first-loss capital buffer for the FiRM lending protocol:
+
+- `FiRMSlashingModule.sol`
+- `jDola.sol`
+- `LinearInterpolationDelayModel.sol`
+- `WithdrawalEscrow.sol`
+
+**Findings Summary**
+
+| Severity | Count | Resolved |
+|---|---|---|
+| High | 1 | ✓ |
+| Medium | 1 | ✓ |
+| Low / Informational | 3 | ✓ |
+
+All findings were addressed prior to jrDOLA's deployment.
+
+---
+
+### Sherlock — jrDOLA Public Audit Contest
+
+| | |
+|---|---|
+| **Platform** | Sherlock |
+| **Date** | November 10–14, 2025 |
+| **Scope** | jrDOLA (Junior Tranche, Inverse Finance) |
+| **Researchers** | 46+ independent security experts |
+| **Status** | Complete — all findings resolved |
+| **Report** | Link forthcoming |
+
+**Scope**
+
+The public contest covered the same jrDOLA contract suite as the private review, providing broad coverage across a competitive field of 46 independent security researchers:
+
+- `FiRMSlashingModule.sol`
+- `jDola.sol`
+- `LinearInterpolationDelayModel.sol`
+- `WithdrawalEscrow.sol`
+
+**Findings Summary**
+
+| Severity | Count | Resolved |
+|---|---|---|
+| High | 0 | — |
+| Medium | 2 | ✓ |
+
+Both medium-severity findings were remediated before jrDOLA's deployment.
+
+---
 
 ## Audit Philosophy
 
-We believe in transparent security practices and proactive vulnerability management.
+Security reviews are a necessary but not sufficient condition for safe deployment. Each audit engagement is treated as a starting point rather than a finish line. Findings are triaged and addressed before contracts go live, and re-audits are commissioned whenever material changes are made to previously reviewed code. Beyond external audits, the protocol maintains an active bug bounty program and ongoing internal review processes.
+
+<CardGroup cols={2}>
+  <Card title="Bug Bounty Program" href="/security/bug-bounty">
+    Report vulnerabilities and earn rewards for responsible disclosure.
+  </Card>
+  <Card title="Risk Disclosures" href="/security/risks">
+    Understand the risks associated with using Monolith stablecoins and the protocol.
+  </Card>
+</CardGroup>
