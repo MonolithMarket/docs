@@ -6,7 +6,7 @@ icon: 'bug'
 
 ## Overview
 
-Monolith runs a live bug bounty program hosted on the [Sherlock](https://sherlock.xyz) platform. Security researchers who responsibly disclose valid vulnerabilities in Monolith's smart contracts are eligible for rewards based on severity. All submissions must be made through the Sherlock platform in accordance with their [platform rules](https://docs.sherlock.xyz/bug-bounties/post-launch-bounty/platform-rules).
+Monolith runs a live bug bounty program hosted on [Sherlock]([INSERT SHERLOCK PROGRAM URL]). Security researchers who responsibly disclose valid vulnerabilities in Monolith's smart contracts are eligible for rewards based on severity. All submissions must be made through the Sherlock platform in accordance with their [platform rules](https://docs.sherlock.xyz/bug-bounties/post-launch-bounty/platform-rules).
 
 <Note>
   Submit all vulnerability reports through Sherlock. Do not publicly disclose findings before they are resolved, and do not test on mainnet or public testnets.
@@ -21,9 +21,9 @@ Monolith runs a live bug bounty program hosted on the [Sherlock](https://sherloc
 | Critical | $5,000 – $20,000 |
 | High | $3,000 |
 | Medium | $1,000 |
-| Low | $250 – $500 |
+| Low / Informational | $250 – $500 |
 
-Reward amounts within ranges are determined at the discretion of the Monolith team based on the actual impact, exploitability, and quality of the report. Payment is made in accordance with Sherlock's standard payout process.
+Reward amounts within ranges are determined at the discretion of the Monolith team based on the actual impact, exploitability, and quality of the report. Rewards are paid in DOLA. Duplicate submissions — where the same vulnerability has already been reported — are not eligible for a reward.
 
 ---
 
@@ -62,7 +62,7 @@ Only contracts explicitly listed in the active Sherlock program page are conside
 - Griefing attacks causing damage without direct profit motive
 - Theft of gas or unbounded gas consumption
 
-### Low
+### Low / Informational
 
 - Contract fails to deliver promised returns without loss of principal
 - Edge case behavior inconsistent with specification
@@ -81,6 +81,19 @@ The following are not eligible for rewards:
 - Any testing conducted on mainnet or public testnet
 - Social engineering, phishing, or denial-of-service attacks
 - Third-party infrastructure not controlled by the Monolith protocol
+
+---
+
+## Previous Audits
+
+The following audits have been completed. Issues identified in these reports are out of scope for the bug bounty program.
+
+| Auditor | Type | Date | Report |
+|---|---|---|---|
+| Electisec (yAudit) | Private audit | June 2025 | [View report](https://) |
+| ChainSecurity | Private audit | October 2025 | [View report](https://) |
+| Sherlock | Public contest | December 2025 | [View report](https://) |
+| ChainSecurity | Re-audit (v5.1) | March–April 2026 | [View report](https://) |
 
 ---
 
@@ -108,7 +121,7 @@ Submissions are made directly through the Sherlock bug bounty platform. Sherlock
 
 ## Direct Disclosure
 
-Under extraordinary circumstances, researchers may contact the Monolith team directly before submitting through Sherlock — for example, in cases of active exploitation risk. In such cases, reach out via the Inverse Finance Discord prior to submission to discuss the appropriate channel. Direct submissions are evaluated on a case-by-case basis and do not guarantee a reward outside the standard Sherlock process.
+Under extraordinary circumstances, researchers may contact the Monolith team directly before submitting through Sherlock — for example, in cases of active exploitation risk. In such cases, reach out via the [Inverse Finance Discord](https://discord.gg/e3B8rbxZ) prior to submission to discuss the appropriate channel. Direct submissions are evaluated on a case-by-case basis and do not guarantee a reward outside the standard Sherlock process.
 
 <CardGroup cols={2}>
   <Card title="Audits" href="/security/audits">

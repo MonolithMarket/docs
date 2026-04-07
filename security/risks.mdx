@@ -34,7 +34,7 @@ Borrowers whose collateral falls below the required threshold will have their po
 
 ## Redemption Risk (0% Borrowing Mode)
 
-Borrowers who use the 0% interest rate mode accept the risk of redemption. Any holder of the stablecoin can redeem their tokens directly against the collateral of the lowest-health position in the system. Borrowers in this mode should maintain healthy collateral ratios and monitor their position, as redemptions can close or partially close a borrow without warning. This risk does not apply to borrowers in the variable rate mode.
+Borrowers who use the 0% interest rate mode accept the risk of redemption. Any holder of the stablecoin can redeem their tokens directly against the collateral of a specified borrower in redeemable status. Redemptions improve the overall health of the loan book by targeting borrowers and repaying their debt, but the affected borrower will have their collateral reduced in exchange. Borrowers who wish to avoid redemption risk should switch to the variable rate borrowing mode, which provides full protection from redemptions.
 
 ---
 
@@ -50,6 +50,12 @@ Each Monolith instance is backed by a single collateral asset. Unlike diversifie
 
 ---
 
+## Bad Debt Risk
+
+In extreme scenarios where a position becomes deeply undercollateralized and cannot be fully liquidated, the resulting bad debt is socialized across all active borrowers in the system — both variable rate and 0% mode borrowers — proportionally. This reduces the debt burden of the bad debt position at the cost of increasing the effective debt of other borrowers. Users should be aware that the financial health of the overall borrower pool affects their own position.
+
+---
+
 ## Immutability Risk
 
 Monolith's immutability model is a feature, but it carries its own considerations. Before the immutability deadline, an instance operator retains the ability to adjust certain parameters, including interest model knobs and redemption fees. Users should be aware of whether the instance they are using has reached its immutability deadline. After the deadline passes (or `enableImmutabilityNow()` is called), the operator loses all policy-level access permanently — meaning a discovered misconfiguration cannot be corrected.
@@ -59,12 +65,6 @@ Monolith's immutability model is a feature, but it carries its own consideration
 ## Factory and Instance Legitimacy Risk
 
 Anyone can deploy a Monolith stablecoin instance through the Factory. Not all instances are created or endorsed by the Monolith core team. Users must independently verify the legitimacy of any instance they interact with, including reviewing the collateral asset, price feed, operator configuration, and immutability status. Interacting with an unverified or malicious instance carries significant risk.
-
----
-
-## Staking Vault Risk
-
-sToken holders earn yield from borrower interest, but they are also exposed to the protocol's economic health. If the system accrues bad debt — for example, following a collateral crash that outpaces liquidations — the value of sToken shares may be diluted or impaired. Staking does not provide insurance against protocol-level losses.
 
 ---
 
