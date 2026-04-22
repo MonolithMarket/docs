@@ -9,7 +9,7 @@ icon: 'dollar-sign'
 Monolith offers borrowers two borrowing modes that behave differently under interest accrual and redemptions:
 
 - **Paid debt**: interest‑paying borrowing that funds yield to stakers while being exempt from redemptions.
-- **Free debt**: non‑interest‑paying borrowing that is eligible to be repaid by external redemptions, with collateral seized pro‑rata from participants.
+- **Free debt**: non‑interest‑paying borrowing that is eligible to be repaid by external redemptions, with collateral seized according to oracle price plus a fee.
 
 Both modes use the same collateralization and solvency rules; the choice primarily affects eligibility for redemptions and the cost of the loan (interest rate).
 
@@ -30,10 +30,10 @@ Both modes use the same collateralization and solvency rules; the choice primari
 
 ## Characteristics
 - Does not accrue interest; your loan is always free.
-- Your position becomes part of the “redeemable” pool: external users can redeem `Coin` for collateral from this shared pool.
-- When a redemption occurs:
-  - Global free debt decreases by the redeemed `Coin` amount (your computed debt falls pro‑rata with the pool).
-  - An equivalent value of collateral (minus a small redemption fee kept by you) is seized pro‑rata from all free‑debt borrowers and sent to the redeemer.
+- Your position becomes “redeemable”: external users can redeem `Coin` for collateral from your position at the oracle price + a fee, with the paid amount reducing your debt.
+- When targeted by a redemption:
+  - Your debt will fall
+  - An equivalent value of collateral (minus a small redemption fee kept by you) is seized from you and sent to the redeemer.
 
 ## When to choose free debt
 - You optimize for cost of capital and want zero interest accrual at the cost of more active management.
@@ -48,9 +48,9 @@ Both modes use the same collateralization and solvency rules; the choice primari
 
 # Interest and fees at a glance
 
-- Paid debt funds staking yield: interest is periodically converted into newly minted `Coin` credited to the instance `Vault` (stakers), after deducting protocol and local reserve fees.
-- Free debt pays no interest; instead, redemptions repay free debt and seize collateral value pro‑rata from the free‑debt pool.
-- A small redemption fee reduces the collateral a redeemer receives; this fee is kept by the free borrowers and helps protect against adverse selection during redemptions.
+- Paid debt funds staking yield: Interest is periodically converted into newly minted `Coin` credited to the instance `Vault` (stakers), after deducting protocol and local reserve fees.
+- Free debt pays no interest; instead, redemptions repay free debt and seize collateral value from redeemable borrowers.
+- A small redemption fee reduces the collateral a redeemer receives; this fee is kept by the free borrower and helps protect against adverse selection during redemptions.
  
  # How borrower choices guide the interest rate
  
@@ -67,3 +67,11 @@ Both modes use the same collateralization and solvency rules; the choice primari
 
 - Both modes share the same collateralization rules and oracle‑based solvency checks.
 - If your position becomes unsafe, it can be liquidated irrespective of mode.
+
+# PSM deposits influence on free debt
+
+- Monolith comes with an optional Price Stability Module (PSM)
+  - The PSM allows depositors to deposit a `PSM asset` of equivalent value to `Coin` and receive `Coin` in return.
+  - `Coin` issued this way is accounted as free debt.
+  - While there is PSM assets in the PSM vault, PSM assets can be redeemed 1-to-1 for `Coin`.
+
