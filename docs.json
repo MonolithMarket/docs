@@ -21,18 +21,6 @@
             ]
           },
           {
-            "group": "Guides",
-            "pages": [
-              "guides/overview",
-              "guides/deploy-stablecoin",
-              "guides/borrow-stablecoins",
-              "guides/buy-and-stake-stablecoins",
-              "guides/redeem-stablecoins",
-              "guides/liquidate-positions",
-              "guides/operate-stablecoin"
-            ]
-          },
-          {
             "group": "Protocol",
             "pages": [
               "protocol/overview",
