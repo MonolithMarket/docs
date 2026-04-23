@@ -1,91 +1,56 @@
 ---
 title: "Contract Addresses"
-description: "Official contract addresses for Monolith protocol"
+description: "Deployed Monolith contract addresses"
 icon: "address-book"
 ---
 
-# Contract Addresses
+Monolith consists of a small set of singleton contracts per chain, plus per-instance `Lender`, `Coin`, and `Vault` contracts deployed by the `Factory`.
 
-## Mainnet Addresses
+## Singletons
 
-### Core Contracts
+### Ethereum Mainnet
 
-| Contract                 | Address                                      | Network  |
-| ------------------------ | -------------------------------------------- | -------- |
-| Stablecoin Factory       | `0x0000000000000000000000000000000000000001` | Ethereum |
-| Interest Rate Controller | `0x0000000000000000000000000000000000000000` | Ethereum |
-| Peg Stability Module     | `0x0000000000000000000000000000000000000000` | Ethereum |
-| Liquidation Engine       | `0x0000000000000000000000000000000000000000` | Ethereum |
-
-### Token Contracts
-
-| Token                 | Address                                      | Network  |
-| --------------------- | -------------------------------------------- | -------- |
-| MONO Governance Token | `0x0000000000000000000000000000000000000000` | Ethereum |
-| USDX Stablecoin       | `0x0000000000000000000000000000000000000000` | Ethereum |
-| EURX Stablecoin       | `0x0000000000000000000000000000000000000000` | Ethereum |
-
-### Supporting Contracts
-
-| Contract        | Address                                      | Network  |
-| --------------- | -------------------------------------------- | -------- |
-| Price Oracle    | `0x0000000000000000000000000000000000000000` | Ethereum |
-| Treasury        | `0x0000000000000000000000000000000000000000` | Ethereum |
-| Staking Rewards | `0x0000000000000000000000000000000000000000` | Ethereum |
-
-## Testnet Addresses
+| Contract | Address |
+|---|---|
+| Factory  | [`0x6aB52d36a1C29B6a00E0DBF6806728548FF16D66`](https://etherscan.io/address/0x6aB52d36a1C29B6a00E0DBF6806728548FF16D66) |
+| Lens     | [`0x8aAb59675e123cEEFE5E05B0BC1bE8fe6101E60d`](https://etherscan.io/address/0x8aAb59675e123cEEFE5E05B0BC1bE8fe6101E60d) |
+| Metadata | [`0x62E71ec317a8Bf6Ae7C4d68DDD3b57B394ec8E3C`](https://etherscan.io/address/0x62E71ec317a8Bf6Ae7C4d68DDD3b57B394ec8E3C) |
 
 ### Sepolia Testnet
 
-| Contract                 | Address                                      |
-| ------------------------ | -------------------------------------------- |
-| Stablecoin Factory       | `0x0000000000000000000000000000000000000000` |
-| Interest Rate Controller | `0x0000000000000000000000000000000000000000` |
-| Test Token (USDC)        | `0x0000000000000000000000000000000000000000` |
+| Contract | Address |
+|---|---|
+| Factory  | [`0x4BeA68cefb30b8346DCaDF2422396A9829f85bEB`](https://sepolia.etherscan.io/address/0x4BeA68cefb30b8346DCaDF2422396A9829f85bEB) |
+| Lens     | [`0x82342771D91a4DAA9947419D1e0F95Fe7E3d2a22`](https://sepolia.etherscan.io/address/0x82342771D91a4DAA9947419D1e0F95Fe7E3d2a22) |
+| Metadata | [`0x718D232aBa3d9eA6DC97E286634639853Aa430F8`](https://sepolia.etherscan.io/address/0x718D232aBa3d9eA6DC97E286634639853Aa430F8) |
 
-### Goerli Testnet (Deprecated)
+## Discovering per-instance contracts
 
-| Contract                 | Address                                      |
-| ------------------------ | -------------------------------------------- |
-| Stablecoin Factory       | `0x0000000000000000000000000000000000000000` |
-| Interest Rate Controller | `0x0000000000000000000000000000000000000000` |
+Each stablecoin instance consists of three contracts deployed by `Factory.deploy(DeployParams)`:
 
-## Layer 2 Networks
+- **Lender** — core lending contract for the instance
+- **Coin** — ERC‑20 stablecoin for the instance
+- **Vault** — ERC‑4626 staked vault for the instance
 
-### Arbitrum One
+Enumerate existing instances by reading the Factory:
 
-| Contract           | Address                                      |
-| ------------------ | -------------------------------------------- |
-| Stablecoin Factory | `0x0000000000000000000000000000000000000000` |
-| Bridge             | `0x0000000000000000000000000000000000000000` |
+```solidity
+uint256 count = factory.deploymentsLength();
+address lender = factory.deployments(i);      // i < count
+address coin   = address(Lender(lender).coin());
+address vault  = address(Lender(lender).vault());
+```
 
-### Optimism
+Or index the `Deployed(address indexed lender, address indexed coin, address indexed vault)` event emitted by the Factory on each `deploy()` call.
 
-| Contract           | Address                                      |
-| ------------------ | -------------------------------------------- |
-| Stablecoin Factory | `0x0000000000000000000000000000000000000000` |
-| Bridge             | `0x0000000000000000000000000000000000000000` |
+## Interest model
 
-## Verification
+A single `InterestModel` instance is deployed per chain by the `Factory` constructor. Read its address from the Factory:
 
-All contracts are verified on their respective block explorers:
+```solidity
+address interestModel = factory.interestModel();
+```
 
-- [Etherscan](https://etherscan.io) - Ethereum Mainnet
-- [Arbiscan](https://arbiscan.io) - Arbitrum
-- [Optimistic Etherscan](https://optimistic.etherscan.io) - Optimism
-- [Sepolia Etherscan](https://sepolia.etherscan.io) - Sepolia Testnet
+## Source code
 
-## Source Code
-
-Contract source code is available on [GitHub](https://github.com/monolith-protocol/contracts).
-
-## Security Notes
-
-- Never send funds directly to contract addresses
-- Always verify addresses before interaction
-- Use official interfaces and verified contracts only
-- Report suspicious activity through our bug bounty program
-
-## Updates
-
-Contract addresses may be updated during protocol upgrades. Always check this page and our official channels for the latest addresses.
+All contracts are open source at [github.com/MonolithMarket/Monolith](https://github.com/MonolithMarket/Monolith).

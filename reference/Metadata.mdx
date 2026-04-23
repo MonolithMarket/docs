@@ -1,0 +1,109 @@
+---
+title: 'Metadata'
+description: 'Singleton contract for per-instance branding and display metadata'
+icon: 'tag'
+---
+
+# Metadata Contract
+
+`Metadata` is a chain-singleton contract that stores branding and display information for each Monolith instance: social URLs, logos, project name, coin denomination, description, and an optional collateral USD price feed. It holds no funds and performs no protocol logic — it exists purely so that UIs can render consistent information for every deployed stablecoin.
+
+[Contract source](https://github.com/MonolithMarket/Monolith/blob/main/src/Metadata.sol)
+
+## Access control
+
+All setters are guarded by the `onlyOperator(address _lender)` modifier. A caller must equal `ILender(_lender).operator()` to set metadata for that Lender. Each Lender's operator therefore manages its own metadata independently; there is no global admin.
+
+## Types
+
+```solidity
+enum CoinType { Stablecoin, Volatile }
+
+struct MetadataValues {
+    string   websiteUrl;
+    string   xUrl;
+    string   discordUrl;
+    string   telegramUrl;
+    string   otherUrl;
+    string   coinLogoUrl;
+    string   vaultLogoUrl;
+    string   projectName;
+    string   projectLogoUrl;
+    CoinType coinType;
+    string   coinDenomination;
+    address  collateralUsdPriceFeed;  // optional; address(0) if market feed is already USD-denominated
+    string   description;
+}
+```
+
+## Storage
+
+Per-Lender mappings (all public, so each has an auto-generated getter):
+
+- `websiteUrl`, `xUrl`, `discordUrl`, `telegramUrl`, `otherUrl`
+- `coinLogoUrl`, `vaultLogoUrl`, `projectLogoUrl`
+- `projectName`, `coinDenomination`, `description`
+- `coinType` (`CoinType` enum)
+- `collateralUsdPriceFeed` (address)
+
+## Functions
+
+### setMetadata
+
+```solidity
+function setMetadata(address _lender, MetadataValues calldata m) external
+```
+
+Batch setter that writes every metadata field for `_lender` in one call. Emits `MetadataUpdated(_lender, m)`.
+
+**Requirements:**
+- `msg.sender == ILender(_lender).operator()`
+
+---
+
+### getMetadata
+
+```solidity
+function getMetadata(address _lender) external view returns (MetadataValues memory)
+```
+
+Reads all metadata fields for `_lender` as a single `MetadataValues` struct.
+
+---
+
+### Individual setters
+
+Each of the following sets one field and emits the corresponding `*Updated` event. All require `msg.sender == ILender(_lender).operator()`.
+
+```solidity
+function setDescription            (address _lender, string  calldata _description)            external;
+function setWebsiteUrl             (address _lender, string  calldata _websiteUrl)             external;
+function setXUrl                   (address _lender, string  calldata _xUrl)                   external;
+function setDiscordUrl             (address _lender, string  calldata _discordUrl)             external;
+function setTelegramUrl            (address _lender, string  calldata _telegramUrl)            external;
+function setOtherUrl               (address _lender, string  calldata _otherUrl)               external;
+function setCoinLogoUrl            (address _lender, string  calldata _coinLogoUrl)            external;
+function setVaultLogoUrl           (address _lender, string  calldata _vaultLogoUrl)           external;
+function setProjectName            (address _lender, string  calldata _projectName)            external;
+function setProjectLogoUrl         (address _lender, string  calldata _projectLogoUrl)         external;
+function setCoinType               (address _lender, CoinType          _coinType)              external;
+function setCoinDenomination       (address _lender, string  calldata _coinDenomination)       external;
+function setCollateralUsdPriceFeed (address _lender, address           _collateralUsdPriceFeed) external;
+```
+
+## Events
+
+- `MetadataUpdated(address indexed lender, MetadataValues values)` — emitted by `setMetadata`.
+- `WebsiteUrlUpdated(address indexed lender, string websiteUrl)`
+- `XUrlUpdated(address indexed lender, string xUrl)`
+- `DiscordUrlUpdated(address indexed lender, string discordUrl)`
+- `TelegramUrlUpdated(address indexed lender, string telegramUrl)`
+- `OtherUrlUpdated(address indexed lender, string otherUrl)`
+- `CoinLogoUrlUpdated(address indexed lender, string coinLogoUrl)`
+- `VaultLogoUrlUpdated(address indexed lender, string vaultLogoUrl)`
+- `ProjectNameUpdated(address indexed lender, string projectName)`
+- `ProjectLogoUrlUpdated(address indexed lender, string projectLogoUrl)`
+- `CoinTypeUpdated(address indexed lender, CoinType coinType)`
+- `CoinDenominationUpdated(address indexed lender, string coinDenomination)`
+- `DescriptionUpdated(address indexed lender, string description)`
+- `CollateralUsdPriceFeedUpdated(address indexed lender, address collateralUsdPriceFeed)`

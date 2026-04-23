@@ -1,34 +1,62 @@
 ---
 title: 'Lens'
-description: 'Read-only contract for accessing protocol data'
+description: 'Read-only helper contract for simulating and querying Monolith state'
 icon: 'eye'
 ---
 
 # Lens Contract
 
-The Lens contract provides read-only access to protocol data and analytics for the Monolith lending protocol.
+`Lens` is a stateless, view-only helper that simulates interest accrual and redemption outcomes without mutating protocol state. It is useful for UI previews and off-chain integrations that need fresh values without paying gas for `accrueInterest()`.
 
-[Contract implementation](https://github.com/MonolithMarket/Monolith/blob/main/src/Lens.sol)
+[Contract source](https://github.com/MonolithMarket/Monolith/blob/main/src/Lens.sol)
 
 ## Functions
 
-### getCollateralOf
+### previewRedeem
 
 ```solidity
-function getCollateralOf(Lender _lender, address borrower) public view returns (uint256 collateralAmount)
+function previewRedeem(Lender _lender, address borrower, uint256 amountIn)
+    external
+    view
+    returns (uint256 coinIn, uint256 amountOut)
 ```
 
-Returns the borrower's effective collateral balance after applying any pending redemption adjustments (free‑debt epochs).
+Simulates the outcome of redeeming `amountIn` Coin against `borrower`'s collateral on `_lender`, using current state plus pending interest.
 
 **Parameters:**
-- `_lender`: Lender instance to read from
-- `borrower`: Address of the borrower
+- `_lender`: Lender instance to query
+- `borrower`: Borrower to redeem against (must be in redeemable mode)
+- `amountIn`: Desired amount of Coin to redeem
 
 **Returns:**
-- `uint256`: Effective collateral amount for display/accounting
+- `coinIn`: Amount of Coin that would actually be consumed (capped by the borrower's debt and by their collateral value at the current price)
+- `amountOut`: Amount of collateral the redeemer would receive, in collateral token decimals
+
+**Returns `(0, 0)` when any of the following hold:**
+- `amountIn` is zero
+- `borrower` is not redeemable (`isRedeemable(borrower) == false`)
+- `borrower` has no collateral
+- The oracle does not allow liquidations (stale/invalid price or reduce-only)
+- `borrower` has no debt
+- The computed `amountOut` is zero or exceeds the borrower's collateral balance
+
+---
+
+### getDebtOf
+
+```solidity
+function getDebtOf(Lender _lender, address borrower) public view returns (uint256)
+```
+
+Returns `borrower`'s current debt on `_lender`, **including interest that has accrued since the last `accrueInterest()` call**. In contrast, `Lender.getDebtOf` reflects only already-accrued state.
+
+**Parameters:**
+- `_lender`: Lender instance to query
+- `borrower`: Borrower address
+
+**Returns:**
+- Current debt amount (18 decimals), synchronized with `InterestModel.calculateInterest`. Zero if the borrower has no shares in the appropriate (paid or free) debt pool.
 
 **Details:**
-- If the borrower has zero free‑debt shares, returns the cached collateral balance directly.
-- Otherwise, iterates up to 5 missed epochs to apply any redemption index changes, reducing collateral accordingly.
-- After iterating missed epochs, also applies the current epoch's pending redemption index.
-- Mirrors the lender's internal lazy‑update logic without mutating state.
+- For redeemable borrowers, debt is computed from `freeDebtShares` against `totalFreeDebt` (free debt does not accrue interest).
+- For non-redeemable borrowers, debt is computed from `paidDebtShares` against a synced `totalPaidDebt` that includes pending interest via a `try/catch` call to `InterestModel.calculateInterest`. If the interest math would overflow, the function falls back to the unsynced value rather than reverting.

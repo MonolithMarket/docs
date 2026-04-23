@@ -336,4 +336,4 @@ Accrues interest from the underlying lender contract. Must be called before shar
 ## Security Considerations
 - All state-changing functions accrue interest first
 - Share calculations use current total assets
-- First depositor loses 0.1 `Coin` of their deposit
+- The first ever depositor forfeits `MIN_SHARES` (1e16 = 0.01 share units) which are burned to `address(0)` to prevent the ERC‑4626 inflation attack

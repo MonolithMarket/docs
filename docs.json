@@ -65,7 +65,8 @@
               "reference/Coin",
               "reference/Vault",
               "reference/InterestModel",
-              "reference/Lens"
+              "reference/Lens",
+              "reference/Metadata"
             ]
           }
         ]
