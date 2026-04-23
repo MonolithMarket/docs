@@ -1,66 +1,84 @@
 ---
 title: 'Audits'
-description: 'Security audit reports and findings'
-icon: 'file-contract'
+description: 'Security audit history for the Monolith protocol'
+icon: 'shield-check'
 ---
 
 ## Overview
 
-Monolith has undergone comprehensive security audits by leading blockchain security firms.
+Monolith's core contracts have been independently reviewed by multiple security firms before and after deployment. All findings from completed engagements have been addressed by the development team. The ChainSecurity re-audit final report is pending publication.
 
-## Audit Reports
+<Note>
+  The ChainSecurity re-audit report is a pre-publication draft. All other audit reports are linked in the table below.
+</Note>
 
-### Latest Audit - [Audit Firm Name]
-- **Date**: [Date]
-- **Auditor**: [Firm Name]
-- **Scope**: Complete protocol audit
-- **Status**: ✅ Passed with minor recommendations
+---
 
-#### Key Findings
-- [List of critical findings - if any]
-- [List of high severity issues - if any]
-- [List of medium severity issues]
-- [List of low severity issues]
-- [List of informational findings]
+## Audit History
 
-#### Recommendations Implemented
-- [List of fixes and improvements made]
+| Auditor | Type | Date | Report |
+|---|---|---|---|
+| Electisec (yAudit) | Private audit | June 2025 | [View report](https://monolith-public-files.vercel.app/audits/yAudit-Monolith-Report-June-2025.pdf) |
+| ChainSecurity | Private audit | October 2025 | [View report](https://monolith-public-files.vercel.app/audits/ChainSecurity-Monolith-Audit-Report-October-2025.pdf) |
+| Sherlock | Public contest | December 2025 | [View report](https://monolith-public-files.vercel.app/audits/Sherlock-Monolith-Public-Audit-Contest-Report-December-2025.pdf) |
+| ChainSecurity | Re-audit (v5.1) | March–April 2026 | [View report](https://monolith-public-files.vercel.app/audits/ChainSecurity-Monolith-Re-Audit-Report-March-2026.pdf) |
+| Sherlock AI | AI-assisted review | April 2026 | [View report](https://monolith-public-files.vercel.app/audits/Sherlock-AI-Monolith-Audit-Report-April-2026.pdf) |
+| Nemesis | AI-assisted review | April 2026 | [View report](https://monolith-public-files.vercel.app/audits/Nemesis-Monolith-Audit-Report-April-2026.md) |
+| Zellic v12 | AI-assisted review | April 2026 | [View report](https://v12.sh/runs/1892/public) |
 
-### Previous Audits
+---
 
-#### Audit Round 2 - [Firm Name]
-- **Date**: [Date]
-- **Status**: ✅ All issues resolved
+### Electisec — June 2025
 
-#### Audit Round 1 - [Firm Name]
-- **Date**: [Date]
-- **Status**: ✅ All issues resolved
+Electisec (formerly yAudit) conducted a private review of the five core Monolith protocol contracts: `Factory.sol`, `Lender.sol`, `Vault.sol`, `InterestModel.sol`, and `Coin.sol`. Two auditors conducted the review over five days, with particular focus on the protocol's novel dual-debt architecture, the interaction between the interest rate model and redeemable borrower positions, and the correctness of interest accrual and liquidation mechanics. All findings were fully resolved prior to deployment.
 
-## Audit Process
+---
 
-### Pre-Audit Preparation
-- Code documentation
-- Test coverage requirements
-- Scope definition
+### ChainSecurity — October 2025
 
-### During Audit
-- Bi-weekly status updates
-- Real-time issue tracking
-- Collaborative resolution process
+ChainSecurity performed an independent code assessment of the Monolith smart contracts, covering the same core contract suite reviewed by Electisec. The assessment examined precision of arithmetic operations, integration with external ERC-4626 vaults, functional correctness of the redemption and liquidation systems, and the trustworthiness of the operator access control model. All findings were addressed by the development team.
 
-### Post-Audit
-- Implementation of recommendations
-- Additional test coverage
-- Community disclosure
+---
 
-## Ongoing Security
+### Sherlock Public Contest — December 2025
 
-Beyond third-party audits, we maintain:
-- Continuous code review
-- Automated security testing
-- Bug bounty program
-- Community security contributions
+A competitive public audit contest was hosted on Sherlock from December 8–14, 2025, with lead security expert bughuntoor overseeing the engagement. The contest extended the scope to include `src/Lens.sol` alongside the five core contracts, and drew participation from over 100 independent security researchers. All issues identified during the contest were fully resolved prior to deployment.
 
-## Audit Philosophy
+---
 
-We believe in transparent security practices and proactive vulnerability management.
+### ChainSecurity Re-audit — March–April 2026
+
+ChainSecurity conducted a re-audit of the Monolith protocol covering material changes made since their initial October 2025 review, including updates introduced across multiple iterative code versions. The engagement incorporated a final audit slot on March 23, 2026. The final report is pending publication.
+
+<Note>
+  Pre-disclosure findings from this engagement are confidential until ChainSecurity publishes the final report. This page will be updated with the report link upon release.
+</Note>
+
+---
+
+### Sherlock AI — April 2026
+
+An AI-assisted security review of the Monolith protocol contracts was conducted using Sherlock's automated analysis tooling. The review covered the core contract suite and was run in conjunction with the broader AI audit initiative ahead of deployment.
+
+---
+
+### Nemesis — April 2026
+
+An AI-assisted review was conducted using Nemesis, covering the Monolith protocol contracts. The engagement was part of a multi-tool AI audit initiative run in parallel to complement the human-led audit program.
+
+---
+
+### Zellic v12 — April 2026
+
+An AI-assisted review was conducted using Zellic's v12 automated analysis tooling across the Monolith protocol contracts. The review was run as part of the same April 2026 AI audit initiative alongside Sherlock AI and Nemesis.
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Bug Bounty Program" icon="bug" href="/security/bug-bounty">
+    Learn about our live bug bounty program on Sherlock and how to report vulnerabilities.
+  </Card>
+  <Card title="Risk Disclosures" icon="alert-triangle" href="/security/risks">
+    Understand the risks associated with using Monolith stablecoins and the protocol.
+  </Card>
+</CardGroup>

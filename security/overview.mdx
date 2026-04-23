@@ -1,20 +1,28 @@
 ---
 title: 'Overview'
-description: 'Review security audits, bug bounty program, and risk disclosures for Monolith protocol'
+description: 'Security audits, bug bounty program, and risk disclosures for the Monolith protocol'
 icon: 'book-open'
 ---
 
-Comprehensive security documentation and risk assessments for the Monolith protocol.
+## Security at Monolith
+
+Security is treated as a foundational design constraint rather than an afterthought. Monolith's contract architecture is intentionally minimal and its immutability model is designed to reduce the ongoing attack surface over time — once a deployed instance reaches its immutability deadline, its core monetary policy parameters lock permanently, eliminating a broad class of governance and upgrade risk.
+
+Monolith's core protocol contracts have been reviewed across four independent security engagements: a private audit by Electisec, an initial private assessment by ChainSecurity, a public audit contest on Sherlock, and a re-audit by ChainSecurity covering all subsequent protocol changes. The ChainSecurity re-audit final report is pending publication.
+
+A live bug bounty program is hosted on Sherlock.
+
+---
 
 ## Security Documentation
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="Security Audits" icon="shield-check" href="/security/audits">
     Review third-party security audits and code reviews conducted on Monolith smart contracts.
   </Card>
 
   <Card title="Bug Bounty Program" icon="bug" href="/security/bug-bounty">
-    Learn about our bug bounty program and how to participate in securing the protocol.
+    Learn about our live bug bounty program on Sherlock and how to report vulnerabilities.
   </Card>
 
   <Card title="Risk Disclosures" icon="alert-triangle" href="/security/risks">

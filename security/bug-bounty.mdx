@@ -4,96 +4,133 @@ description: 'Report security vulnerabilities and earn rewards'
 icon: 'bug'
 ---
 
-# Bug Bounty Program
-
 ## Overview
 
-Help secure the Monolith protocol and earn rewards by responsibly disclosing security vulnerabilities.
+Monolith runs a live bug bounty program hosted on [Sherlock]([INSERT SHERLOCK PROGRAM URL]). Security researchers who responsibly disclose valid vulnerabilities in Monolith's smart contracts are eligible for rewards based on severity. All submissions must be made through the Sherlock platform in accordance with their [platform rules](https://docs.sherlock.xyz/bug-bounties/post-launch-bounty/platform-rules).
 
-## Program Scope
+<Note>
+  Submit all vulnerability reports through Sherlock. Do not publicly disclose findings before they are resolved, and do not test on mainnet or public testnets.
+</Note>
 
-### In Scope
-- Smart contracts in the Monolith protocol
-- Frontend interfaces
-- API endpoints
-- Integration services
+---
 
-### Out of Scope
-- Third-party dependencies
-- Known issues already disclosed
-- Social engineering attacks
-- DDoS attacks
+## Rewards
 
-## Reward Structure
+| Severity | Reward |
+|---|---|
+| Critical | $5,000 – $20,000 |
+| High | $3,000 |
+| Medium | $1,000 |
+| Low / Informational | $250 – $500 |
 
-### Critical Vulnerabilities
-- Direct theft of funds
-- Permanent loss of funds
-- Complete protocol compromise
+Reward amounts within ranges are determined at the discretion of the Monolith team based on the actual impact, exploitability, and quality of the report. Rewards are paid in DOLA. Duplicate submissions — where the same vulnerability has already been reported — are not eligible for a reward.
 
-**Reward**: Up to $100,000 + percentage of recovered funds
+---
 
-### High Severity
-- Temporary loss of funds
-- Significant protocol disruption
-- Major functionality compromise
+## Assets in Scope
 
-**Reward**: $10,000 - $50,000
+The following contracts are in scope for the bug bounty program:
 
-### Medium Severity
-- Limited loss of funds
-- Temporary service disruption
-- Data exposure without financial impact
+- `Factory.sol`
+- `Coin.sol`
+- `InterestModel.sol`
+- `Vault.sol`
+- `Lender.sol`
 
-**Reward**: $5,000 - $10,000
+Only contracts explicitly listed in the active Sherlock program page are considered in scope. Scope is updated to reflect new deployments and to remove deprecated contracts as the protocol evolves.
 
-### Low Severity
-- Minor issues
-- Edge case problems
-- Documentation issues
+---
 
-**Reward**: $1,000 - $5,000
+## Impacts in Scope
 
-## How to Participate
+### Critical
 
-### Step 1: Review Guidelines
-Read our disclosure policy and testing guidelines carefully.
+- Direct theft of user funds or collateral
+- Protocol insolvency or permanent loss of funds
+- Unauthorized minting of stablecoins
+- Permanent freezing of user funds
 
-### Step 2: Test Responsibly
-- Only test on testnet/mainnet with permission
-- Do not perform DoS attacks
-- Respect rate limits
-- Do not access private user data
+### High
 
-### Step 3: Report Findings
-Send reports to: security@monolith.fi
+- Temporary freezing of funds
+- Significant disruption to liquidations or redemptions
+- Material miscalculation of borrowing power or debt
 
-Include:
-- Detailed description of the vulnerability
-- Steps to reproduce
-- Potential impact assessment
-- Suggested fixes (optional)
+### Medium
 
-### Step 4: Wait for Response
-- Initial response within 48 hours
-- Vulnerability validation within 7 days
-- Reward payment within 30 days of fix deployment
+- Smart contract unable to operate due to missing token funds
+- Griefing attacks causing damage without direct profit motive
+- Theft of gas or unbounded gas consumption
 
-## Disclosure Policy
+### Low / Informational
 
-- We follow responsible disclosure practices
-- We commit to not pursuing legal action against good-faith researchers
-- We ask that you allow us reasonable time to fix issues before public disclosure
+- Contract fails to deliver promised returns without loss of principal
+- Edge case behavior inconsistent with specification
+
+---
+
+## Out of Scope
+
+The following are not eligible for rewards:
+
+- Attacks requiring access to leaked keys or privileged addresses
+- Oracle manipulation where the reporter did not cause the depeg through a code bug
+- Issues already disclosed in a prior audit report
+- Best practice recommendations or feature requests
+- Impacts requiring attacks the researcher has already exploited themselves
+- Any testing conducted on mainnet or public testnet
+- Social engineering, phishing, or denial-of-service attacks
+- Third-party infrastructure not controlled by the Monolith protocol
+
+---
+
+## Previous Audits
+
+The following audits have been completed. Issues identified in these reports are out of scope for the bug bounty program.
+
+| Auditor | Type | Date | Report |
+|---|---|---|---|
+| Electisec (yAudit) | Private audit | June 2025 | [View report](https://monolith-public-files.vercel.app/audits/yAudit-Monolith-Report-June-2025.pdf) |
+| ChainSecurity | Private audit | October 2025 | [View report](https://monolith-public-files.vercel.app/audits/ChainSecurity-Monolith-Audit-Report-October-2025.pdf) |
+| Sherlock | Public contest | December 2025 | [View report](https://monolith-public-files.vercel.app/audits/Sherlock-Monolith-Public-Audit-Contest-Report-December-2025.pdf) |
+| ChainSecurity | Re-audit (v5.1) | March–April 2026 | [View report](https://monolith-public-files.vercel.app/audits/ChainSecurity-Monolith-Re-Audit-Report-March-2026.pdf) |
+| Sherlock AI | AI-assisted review | April 2026 | [View report](https://monolith-public-files.vercel.app/audits/Sherlock-AI-Monolith-Audit-Report-April-2026.pdf) |
+| Nemesis | AI-assisted review | April 2026 | [View report](https://monolith-public-files.vercel.app/audits/Nemesis-Monolith-Audit-Report-April-2026.md) |
+| Zellic v12 | AI-assisted review | April 2026 | [View report](https://v12.sh/runs/1892/public) |
+
+---
 
 ## Rules
 
-- No public disclosure without permission
-- No exploitation of vulnerabilities for personal gain
-- No testing on mainnet without explicit approval
-- One report per vulnerability
+All participants must adhere to Sherlock's [platform rules](https://docs.sherlock.xyz/bug-bounties/post-launch-bounty/platform-rules). Key requirements:
 
-## Contact
+- All testing must be conducted on local forks — never on mainnet or public testnet
+- Do not publicly disclose vulnerabilities before they are resolved
+- Do not exploit discovered vulnerabilities or threaten to do so
+- Submit all reports through the official Sherlock channel
+- Do not communicate with the protocol team outside of Sherlock's platform
 
-For questions about the bug bounty program:
-- Email: security@monolith.fi
-- Discord: #security channel
+---
+
+## How to Submit
+
+Submissions are made directly through the Sherlock bug bounty platform. Sherlock manages the triage and dispute resolution process. Reports should include a clear description of the vulnerability, the affected contracts and functions, steps to reproduce, and an assessment of potential impact. A proof of concept is strongly encouraged.
+
+<Warning>
+  Publicly known bugs or issues reported in a previous audit are not eligible for a payout. Ensure your finding is novel before submitting.
+</Warning>
+
+---
+
+## Direct Disclosure
+
+Under extraordinary circumstances, researchers may contact the Monolith team directly before submitting through Sherlock — for example, in cases of active exploitation risk. In such cases, reach out via the [Inverse Finance Discord](https://discord.gg/e3B8rbxZ) prior to submission to discuss the appropriate channel. Direct submissions are evaluated on a case-by-case basis and do not guarantee a reward outside the standard Sherlock process.
+
+<CardGroup cols={2}>
+  <Card title="Audits" href="/security/audits">
+    Review completed and ongoing third-party security audits.
+  </Card>
+  <Card title="Risk Disclosures" href="/security/risks">
+    Understand the risks associated with using the Monolith protocol.
+  </Card>
+</CardGroup>
