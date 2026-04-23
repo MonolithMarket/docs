@@ -42,7 +42,7 @@ After deployment, the three following contracts will be created:
 - **redeemFeeBps**: Redemption fee in basis points. Must be ≤500 (5%).
 - **stalenessThreshold**: Maximum acceptable age of an oracle update, in seconds. Prices older than this enter reduce‑only mode and decay linearly to zero over an additional 24 hours.
 - **maxBorrowDeltaBps**: Maximum acceptable rounding error when share accounting converts between debt and shares, in basis points. Must be between 50 and 200 (0.5%–2%).
-- **minTotalSupply**: Minimum total supply required in the PSM vault to allow PSM buys. Must be greater than 0 whenever `psmVault` is set; unused otherwise.
+- **psmVaultMinTotalSupply**: Minimum total supply required in the PSM vault to allow PSM buys. Must be greater than 0 whenever `psmVault` is set; unused otherwise.
 
 ## Integration tips
 

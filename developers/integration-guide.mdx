@@ -45,7 +45,7 @@ interface IFactory {
         uint16  redeemFeeBps;               // <= 500 (5%)
         uint32  stalenessThreshold;         // oracle max staleness (seconds)
         uint16  maxBorrowDeltaBps;          // 50..200
-        uint128 minTotalSupply;             // required if psmVault != 0
+        uint128 psmVaultMinTotalSupply;     // required if psmVault != 0
     }
 
     function deploy(DeployParams memory params) external returns (address lender, address coin, address vault);

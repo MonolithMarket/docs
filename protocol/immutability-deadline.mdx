@@ -19,7 +19,7 @@ Each instance has an immutability deadline: a timestamp after which sensitive pa
 ## How it’s set
 
 - On deployment, the deadline is set to `deployTimestamp + timeUntilImmutability`.
-- `timeUntilImmutability` is bounded (less than 4 years) and can be `0` for immediate immutability at launch.
+- `timeUntilImmutability` is bounded (at most 4 years) and can be `0` for immediate immutability at launch.
 - Before the deadline, the operator may call an early lock by calling `enableImmutabilityNow()` (irreversible, cannot be delayed or reopened later).
 
 ## What the deadline locks

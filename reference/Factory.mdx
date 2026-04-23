@@ -49,7 +49,7 @@ struct DeployParams {
     uint16  redeemFeeBps;                // Redemption fee (≤500 = 5%)
     uint32  stalenessThreshold;          // Oracle max staleness in seconds
     uint16  maxBorrowDeltaBps;           // Share-accounting rounding tolerance (50–200)
-    uint128 minTotalSupply;              // PSM vault minimum supply (required if psmVault set)
+    uint128 psmVaultMinTotalSupply;      // PSM vault minimum supply (required if psmVault set)
 }
 ```
 
@@ -62,7 +62,7 @@ struct DeployParams {
 - All bounds listed above are enforced by `Lender`'s constructor and revert on violation.
 - `params.collateral` decimals must be ≤ 30.
 - `params.psmAsset` must differ from the deployed `coin`.
-- If `params.psmVault` is set, its underlying `asset()` must equal `params.psmAsset` and `minTotalSupply` must be > 0.
+- If `params.psmVault` is set, its underlying `asset()` must equal `params.psmAsset` and `psmVaultMinTotalSupply` must be > 0.
 
 **Deployment Process:**
 1. Calculates deterministic addresses using CREATE3

@@ -527,7 +527,7 @@ Sets the local reserve fee rate.
 - `collateralFactor` — max LTV numerator in basis points (e.g., 8000 = 80%). Capped at 8500.
 - `minDebt` — minimum debt per position (0 or ≥ this value).
 - `stalenessThreshold` — oracle max staleness in seconds.
-- `minTotalSupply` — PSM vault minimum supply required to enable buys (if `psmVault` set).
+- `psmVaultMinTotalSupply` — PSM vault minimum supply required to enable buys (if `psmVault` set).
 - `coin`, `collateral`, `vault`, `feed`, `psmAsset`, `psmVault`, `interestModel`, `factory` — contract references set at deployment.
 - `immutabilityDeadline` — timestamp after which tunable parameters are locked.
 
