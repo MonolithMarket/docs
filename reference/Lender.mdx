@@ -201,6 +201,7 @@ Accrues interest on paid debt. Called automatically by state‑changing function
 **Effects:**
 - Uses the shared InterestModel to compute current rate and interest
 - Splits interest into fees (local/global reserves) and staking yield (minted to the Vault)
+- Emits `InterestAccrued(interestAccrued, newBorrowRateMantissa)` on a successful accrual
 
 ---
 
@@ -397,13 +398,16 @@ Mints accumulated local reserves to the caller (operator only).
 ### pullGlobalReserves
 
 ```solidity
-function pullGlobalReserves(address _to) external
+function pullGlobalReserves(address _to) external returns (uint256 amount)
 ```
 
-Mints accumulated global reserves to `_to`.
+Mints accumulated global reserves to `_to` and returns the amount minted.
 
 **Parameters:**
 - `_to`: Address to receive reserves
+
+**Returns:**
+- `amount`: Amount of reserves minted
 
 **Requirements:**
 - Caller must be Factory
@@ -564,3 +568,4 @@ Sets the local reserve fee rate.
 - `ImmutabilityEnabled(uint256 timestamp)`
 - `AccruedLocalReserves(uint256 amount)`
 - `AccruedGlobalReserves(uint256 amount)`
+- `InterestAccrued(uint256 interestAccrued, uint256 newBorrowRateMantissa)`
