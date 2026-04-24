@@ -12,7 +12,7 @@ icon: 'tag'
 
 ## Access control
 
-All setters are guarded by the `onlyOperator(address _lender)` modifier. A caller must equal `ILender(_lender).operator()` to set metadata for that Lender. Each Lender's operator therefore manages its own metadata independently; there is no global admin.
+All setters are guarded by the `onlyOperatorOrManager(address _lender)` modifier. A caller must equal `ILender(_lender).operator()` or `ILender(_lender).manager()` to set metadata for that Lender. Each Lender's operator and manager therefore manage its own metadata independently; there is no global admin.
 
 ## Types
 
@@ -57,7 +57,7 @@ function setMetadata(address _lender, MetadataValues calldata m) external
 Batch setter that writes every metadata field for `_lender` in one call. Emits `MetadataUpdated(_lender, m)`.
 
 **Requirements:**
-- `msg.sender == ILender(_lender).operator()`
+- `msg.sender == ILender(_lender).operator()` or `msg.sender == ILender(_lender).manager()`
 
 ---
 
@@ -73,7 +73,7 @@ Reads all metadata fields for `_lender` as a single `MetadataValues` struct.
 
 ### Individual setters
 
-Each of the following sets one field and emits the corresponding `*Updated` event. All require `msg.sender == ILender(_lender).operator()`.
+Each of the following sets one field and emits the corresponding `*Updated` event. All require `msg.sender == ILender(_lender).operator()` or `msg.sender == ILender(_lender).manager()`.
 
 ```solidity
 function setDescription            (address _lender, string  calldata _description)            external;
