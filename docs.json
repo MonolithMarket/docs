@@ -40,7 +40,8 @@
               "security/overview",
               "security/audits",
               "security/bug-bounty",
-              "security/risks"
+              "security/risks",
+              "security/safe-harbor"
             ]
           },
           {
