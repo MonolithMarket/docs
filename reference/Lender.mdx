@@ -201,6 +201,7 @@ Accrues interest on paid debt. Called automatically by state‑changing function
 **Effects:**
 - Uses the shared InterestModel to compute current rate and interest
 - Splits interest into fees (local/global reserves) and staking yield (minted to the Vault)
+- Emits `InterestAccrued(interestAccrued, newBorrowRateMantissa)` on a successful accrual
 
 ---
 
@@ -272,22 +273,6 @@ Returns the current ratio of free debt to total debt (includes PSM assets in the
 
 **Returns:**
 - `ratio`: Free debt ratio in basis points (0–10000)
-
----
-
-### getRedeemAmountOut
-
-```solidity
-function getRedeemAmountOut(uint amountIn) public view returns (uint amountOut)
-```
-
-Calculates the amount of collateral received for redeeming Coin.
-
-**Parameters:**
-- `amountIn`: Amount of Coin to redeem
-
-**Returns:**
-- `amountOut`: Amount of collateral received
 
 ---
 
@@ -413,13 +398,16 @@ Mints accumulated local reserves to the caller (operator only).
 ### pullGlobalReserves
 
 ```solidity
-function pullGlobalReserves(address _to) external
+function pullGlobalReserves(address _to) external returns (uint256 amount)
 ```
 
-Mints accumulated global reserves to `_to`.
+Mints accumulated global reserves to `_to` and returns the amount minted.
 
 **Parameters:**
 - `_to`: Address to receive reserves
+
+**Returns:**
+- `amount`: Amount of reserves minted
 
 **Requirements:**
 - Caller must be Factory
@@ -491,7 +479,25 @@ Sets the redemption fee in basis points.
 **Requirements:**
 - Caller must be operator or manager
 - Must be before immutability deadline
-- `_redeemFeeBps` must be ≤300 (3%)
+- `_redeemFeeBps` must be ≤500 (5%)
+
+---
+
+### setMaxBorrowDeltaBps
+
+```solidity
+function setMaxBorrowDeltaBps(uint16 _maxBorrowDeltaBps) external
+```
+
+Sets the maximum acceptable rounding error for share-accounting conversions between debt and shares.
+
+**Parameters:**
+- `_maxBorrowDeltaBps`: New max rounding delta (basis points)
+
+**Requirements:**
+- Caller must be operator or manager
+- Must be before immutability deadline
+- `_maxBorrowDeltaBps` must be between 50 and 200 (0.5%–2%)
 
 ---
 
@@ -513,39 +519,53 @@ Sets the local reserve fee rate.
 
 ## Key State Variables
 
-### totalPaidDebt
-Cached total amount of interest-bearing debt in the protocol. May be missing accrued interest.
+### Debt accounting
+- `totalPaidDebt` — cached total interest-bearing debt. May be missing accrued interest until `accrueInterest()` is called.
+- `totalFreeDebt` — total non-interest-bearing (redeemable) debt.
+- `totalPaidDebtShares`, `totalFreeDebtShares` — share-based accounting totals for the two debt pools.
+- `freeDebtShares(address)`, `paidDebtShares(address)` — per-borrower shares in each pool.
+- `isRedeemable(address)` — whether an account's debt is in redeemable (free) mode.
+- `collateralBalances(address)` — per-borrower collateral in collateral-token decimals.
 
-### totalFreeDebt
-Total amount of non-interest-bearing debt in the protocol.
+### Immutable deployment parameters
+- `collateralFactor` — max LTV numerator in basis points (e.g., 8000 = 80%). Capped at 8500.
+- `minDebt` — minimum debt per position (0 or ≥ this value).
+- `stalenessThreshold` — oracle max staleness in seconds.
+- `psmVaultMinTotalSupply` — PSM vault minimum supply required to enable buys (if `psmVault` set).
+- `coin`, `collateral`, `vault`, `feed`, `psmAsset`, `psmVault`, `interestModel`, `factory` — contract references set at deployment.
+- `immutabilityDeadline` — timestamp after which tunable parameters are locked.
 
-### collateralFactor
-Maximum borrower collateralization ratio in basis points (e.g., 8000 = 80%).
+### Tunable parameters (changeable by operator/manager before deadline)
+- `redeemFeeBps` — redemption fee (max 500 / 5%).
+- `maxBorrowDeltaBps` — share-accounting rounding tolerance (50–200).
+- `targetFreeDebtRatioStartBps`, `targetFreeDebtRatioEndBps` — interest rate controller target band.
+- `expRate` — exponential decay/growth rate derived from `halfLife`.
+- `feeBps` — local reserve fee (operator-only; not protected by deadline).
 
-### minDebt
-Minimum debt amount required for positions.
-
-### immutabilityDeadline
-Timestamp after which protocol becomes immutable.
-
-### feeBps
-Protocol fee rate in basis points.
+### Reserves and governance
+- `accruedLocalReserves`, `accruedGlobalReserves` — interest accrued to operator / fee recipient.
+- `cachedGlobalFeeBps` — Factory fee rate cached at last accrual.
+- `operator`, `pendingOperator`, `manager` — access-control addresses.
 
 ## Events
 
-- `PositionAdjusted(address account, int collateralDelta, int debtDelta)`
+- `PositionAdjusted(address indexed account, int collateralDelta, int debtDelta)`
 - `HalfLifeUpdated(uint64 halfLife)`
 - `TargetFreeDebtRatioUpdated(uint16 startBps, uint16 endBps)`
 - `RedeemFeeBpsUpdated(uint16 redeemFeeBps)`
-- `DelegationUpdated(address delegator, address delegatee, bool isDelegatee)`
-- `PendingOperatorUpdated(address pendingOperator)`
-- `OperatorAccepted(address operator)`
-- `ManagerUpdated(address manager)`
+- `MaxBorrowDeltaBpsUpdated(uint16 maxBorrowDeltaBps)`
+- `DelegationUpdated(address indexed delegator, address indexed delegatee, bool isDelegatee)`
+- `PendingOperatorUpdated(address indexed pendingOperator)`
+- `OperatorAccepted(address indexed operator)`
+- `ManagerUpdated(address indexed manager)`
 - `LocalReserveFeeUpdated(uint256 feeBps)`
-- `RedemptionStatusUpdated(address account, bool isRedeemable)`
-- `Liquidated(address borrower, address liquidator, uint repayAmount, uint collateralOut)`
-- `WrittenOff(address borrower, address to, uint debt, uint collateral)`
-- `NewEpoch(uint epoch)`
-- `Redeemed(address account, uint amountIn, uint amountOut)`
-- `Sold(address account, uint coinIn, uint assetOut)`
-- `Bought(address account, uint assetIn, uint coinOut)`
+- `RedemptionStatusUpdated(address indexed account, bool isRedeemable)`
+- `Liquidated(address indexed borrower, address indexed liquidator, uint repayAmount, uint collateralOut)`
+- `WrittenOff(address indexed borrower, address indexed to, uint debt, uint collateral)`
+- `Redeemed(address indexed account, address indexed borrower, uint amountIn, uint amountOut)`
+- `Sold(address indexed account, uint coinIn, uint assetOut)`
+- `Bought(address indexed account, uint assetIn, uint coinOut)`
+- `ImmutabilityEnabled(uint256 timestamp)`
+- `AccruedLocalReserves(uint256 amount)`
+- `AccruedGlobalReserves(uint256 amount)`
+- `InterestAccrued(uint256 interestAccrued, uint256 newBorrowRateMantissa)`

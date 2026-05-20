@@ -1,1 +1,4 @@
 temp
+# Nightshift plan artifacts (keep out of version control)
+.nightshift-plan
+generated_imgs/

@@ -1,0 +1,56 @@
+---
+title: 'Borrower FAQ'
+description: 'Frequently asked questions for borrowers'
+sidebar: false
+icon: 'dollar-sign'
+---
+
+# Borrower FAQ
+
+<AccordionGroup>
+  <Accordion title="When should I choose free debt vs paid debt?">
+    Choose free debt if you want 0% interest and accept that redemptions can seize collateral while repaying your debt. Choose paid debt if you prefer stable ownership of collateral (no redemptions) and are comfortable paying interest.
+  </Accordion>
+
+  <Accordion title="How do redemptions affect my position in free debt?">
+    Redemptions reduce your computed debt and seize collateral pro‑rata based on your free‑debt shares. They are not always lossy but can cause you to actively rebalance your position.
+  </Accordion>
+
+  <Accordion title="Can I toggle between free and paid modes without repaying?">
+    Yes. You can migrate between the two modes at any time.
+  </Accordion>
+
+  <Accordion title="What is a liquidation?">
+    When your loan becomes unsafe (debt exceeds borrowing power), anyone can repay part of your debt in Coin and seize collateral of the same value with a small, LTV‑dependent incentive.
+  </Accordion>
+
+  <Accordion title="What is a write-off?">
+    A last‑resort path for irrecoverable positions: if your debt exceeds the value of your collateral, the protocol can wipe your remaining debt, redistribute it proportionally across all borrowers, and transfer your remaining collateral to the caller. It can happen at the end of liquidations and can be called directly. The purpose of write offs is to socialize losses among borrowers to ensure the system stays solvent.
+  </Accordion>
+
+  <Accordion title="How much of my position can be liquidated at a time?">
+    Each call can liquidate up to 25% of total debt, with a 10,000 Coin minimum chunk (or the entire debt if smaller).
+  </Accordion>
+
+  <Accordion title="How much is the liquidation penalty?">
+    The additional incentive you pay to liquidators from your collateral scales with how far a position exceeds the collateral factor: 0% at the collateral factor, linearly up to 10% when loan‑to‑value is 5 percentage points above it. This design minimizes the liquidation penalty as much as possible.
+  </Accordion>
+
+  <Accordion title="What fees might I encounter as a borrower?">
+    Paid debt incurs variable interest; free debt has no interest. If you use the PSM for swapping when borrowing or repaying, you may pay a PSM swap fee.
+  </Accordion>
+
+  <Accordion title="What is `minDebt` and why might my repay revert?">
+    If you change your debt, the result must be either 0 or ≥ `minDebt`. Partial repays that would leave debt below `minDebt` while non‑zero are not allowed; fully repay or leave at least `minDebt` outstanding.
+  </Accordion>
+
+  <Accordion title="How do delegations work for my position?">
+    You can authorize addresses to manage your position. Delegates can borrow, withdraw collateral and toggle redemption status on your behalf; you can grant multiple delegates and revoke at any time.
+  </Accordion>
+
+  <Accordion title="Is my collateral rehypothecated?">
+    No. Collateral stays in the instance. It can be seized only via redemptions (if you opt into free debt) or liquidations/write‑offs (if unsafe). It is never lent out or reused elsewhere by the protocol.
+  </Accordion>
+</AccordionGroup>
+
+

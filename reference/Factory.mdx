@@ -8,6 +8,14 @@ The Factory contract is responsible for deploying all components of a Monolith i
 
 [Contract implementation](https://github.com/MonolithMarket/Monolith/blob/main/src/Factory.sol)
 
+## Constructor
+
+```solidity
+constructor(address _operator, uint256 _minDebtFloor)
+```
+
+Deploys the Factory and a shared `InterestModel` (accessible via `interestModel()`). Sets the initial operator and the global `minDebtFloor` that applies to every instance's `minDebt` parameter.
+
 ## User-Facing Functions
 
 ### deploy
@@ -24,34 +32,37 @@ Deploys a complete Monolith lending system consisting of a lender, stablecoin, a
 **DeployParams Structure:**
 ```solidity
 struct DeployParams {
-    string name;                        // Token name (e.g., "USD Coin")
-    string symbol;                      // Token symbol (e.g., "USDC")
-    address collateral;                 // Collateral token address
-    address psmAsset;                   // PSM asset token address (optional)
-    address psmVault;                   // PSM vault address (optional)
-    address feed;                       // Chainlink price feed address
-    uint256 collateralFactor;           // Collateral factor in basis points (e.g., 8000 = 80%)
-    uint256 minDebt;                    // Minimum debt amount
-    address operator;                   // Protocol operator address (optional, can be address(0))
-    address manager;                    // Protocol manager address (optional, can be address(0))
-    uint256 timeUntilImmutability;      // Time until protocol becomes immutable
-    uint64 halfLife;                    // Interest rate half-life (12 hours to 30 days)
-    uint16 targetFreeDebtRatioStartBps; // Target free debt ratio lower bound (≥500 bps)
-    uint16 targetFreeDebtRatioEndBps;   // Target free debt ratio upper bound (≤9500 bps)
-    uint16 redeemFeeBps;                // Redemption fee (≤300 bps)
+    string  name;                        // Token name (e.g., "USD Coin")
+    string  symbol;                      // Token symbol (e.g., "USDC")
+    address collateral;                  // Collateral token address
+    address psmAsset;                    // PSM asset token address (address(0) disables PSM)
+    address psmVault;                    // PSM ERC4626 vault (address(0) if unused)
+    address feed;                        // Chainlink-style price feed address
+    uint256 collateralFactor;            // Max LTV numerator in bps (≤8500 = 85%)
+    uint256 minDebt;                     // Minimum debt per position (≥ factory.minDebtFloor())
+    uint256 timeUntilImmutability;       // Seconds until operator params lock (max 1460 days)
+    address operator;                    // Instance operator (address(0) for none)
+    address manager;                     // Instance manager (address(0) for none)
+    uint64  halfLife;                    // Interest rate half-life (12 hours to 30 days)
+    uint16  targetFreeDebtRatioStartBps; // Target free-debt ratio lower bound (≥500, ≤ end)
+    uint16  targetFreeDebtRatioEndBps;   // Target free-debt ratio upper bound (≤9500)
+    uint16  redeemFeeBps;                // Redemption fee (≤500 = 5%)
+    uint32  stalenessThreshold;          // Oracle max staleness in seconds
+    uint16  maxBorrowDeltaBps;           // Share-accounting rounding tolerance (50–200)
+    uint128 psmVaultMinTotalSupply;      // PSM vault minimum supply (required if psmVault set)
 }
 ```
 
 **Returns:**
-- `lender`: Address of the deployed lender contract
-- `coin`: Address of the deployed stablecoin contract
-- `vault`: Address of the deployed vault contract
+- `lender`: Address of the deployed Lender contract
+- `coin`:   Address of the deployed Coin (ERC‑20) contract
+- `vault`:  Address of the deployed Vault (ERC‑4626) contract
 
 **Requirements:**
-- `params.collateral` must be a valid ERC20 token
-- `params.feed` must be a valid Chainlink price feed
-- `params.collateralFactor` must be between 0 and 10000 (0-100% in bps)
-- `params.operator` and `params.manager` may be `address(0)` if you prefer no operator/manager
+- All bounds listed above are enforced by `Lender`'s constructor and revert on violation.
+- `params.collateral` decimals must be ≤ 30.
+- `params.psmAsset` must differ from the deployed `coin`.
+- If `params.psmVault` is set, its underlying `asset()` must equal `params.psmAsset` and `psmVaultMinTotalSupply` must be > 0.
 
 **Deployment Process:**
 1. Calculates deterministic addresses using CREATE3
@@ -74,6 +85,46 @@ Returns the total number of deployments created by this factory.
 
 **Returns:**
 - `uint256`: Number of deployments
+
+---
+
+### deployments
+
+```solidity
+function deployments(uint256 index) external view returns (address lender)
+```
+
+Array accessor returning the Lender address at a given deployment index. Use together with `deploymentsLength()` to enumerate all instances.
+
+---
+
+### interestModel
+
+```solidity
+function interestModel() external view returns (address)
+```
+
+Returns the address of the shared `InterestModel` deployed by this Factory's constructor. All Lenders deployed by this Factory use this same `InterestModel` instance.
+
+---
+
+### minDebtFloor
+
+```solidity
+function minDebtFloor() external view returns (uint256)
+```
+
+Returns the global immutable minimum debt floor. Every Lender's `minDebt` must be ≥ this value at deployment.
+
+---
+
+### pendingOperator
+
+```solidity
+function pendingOperator() external view returns (address)
+```
+
+Returns the address currently queued to accept the operator role via `acceptOperator()`.
 
 ---
 
@@ -261,29 +312,10 @@ Pulls accumulated reserves from a lender deployment to the fee recipient.
 
 ## Events
 
-### CustomFeeBpsSet
-
-```solidity
-event CustomFeeBpsSet(address indexed lender, uint256 feeBps)
-```
-
-Emitted when a custom fee is set for a lender deployment.
-
-**Parameters:**
-- `lender`: Lender deployment address
-- `feeBps`: New custom fee rate
-
----
-
-### Deployed
-
-```solidity
-event Deployed(address indexed lender, address indexed coin, address indexed vault)
-```
-
-Emitted when a new lending system is deployed.
-
-**Parameters:**
-- `lender`: Lender contract address
-- `coin`: Stablecoin contract address
-- `vault`: Vault contract address
+- `Deployed(address indexed lender, address indexed coin, address indexed vault)` — emitted by `deploy()` with the new instance addresses.
+- `CustomFeeBpsSet(address indexed lender, uint256 feeBps)` — emitted by `setCustomFeeBps()`.
+- `FeeBpsUpdated(uint256 feeBps)` — emitted by `setFeeBps()`.
+- `FeeRecipientUpdated(address indexed feeRecipient)` — emitted by `setFeeRecipient()`.
+- `PendingOperatorUpdated(address indexed pendingOperator)` — emitted by `setPendingOperator()`.
+- `OperatorUpdated(address indexed operator)` — emitted by `acceptOperator()`.
+- `ReservesPulled(address indexed lender, address indexed recipient, uint256 amount)` — emitted by `pullReserves()`.

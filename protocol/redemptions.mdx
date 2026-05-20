@@ -15,15 +15,14 @@ Redemptions let `Coin` holders exit into underlying collateral at the oracle pri
 
 ## How redemptions work (high‑level)
 
-1. A user submits `Coin` to redeem.
+1. A user submits a redeemable borrower address to redeem `Coin` from.
 2. The instance values the `Coin` at the oracle price and applies a small redemption fee.
 3. The protocol burns the redeemed `Coin` and transfers collateral to the redeemer.
 4. Global accounting updates:
    - Total free debt decreases by the redeemed amount.
-   - Collateral is removed proportionally from all free‑debt borrowers (paid‑debt collateral is never used).
-   - A redemption index/epoch tracks how much collateral per free‑debt share has been redeemed. Borrowers are updated lazily on their next interaction.
+   - Collateral and debt is removed from the redeemable borrower.
 
-In effect, redemptions repay free debt with the redeemer’s `Coin`, while seizing collateral of equal value (minus fee) from the free‑debt pool.
+In effect, redemptions repay free debt with the redeemer’s `Coin`, while seizing collateral of equal value (minus fee) from the free‑debt borrower.
 
 ## Why only part of the system is redeemable
 
@@ -37,18 +36,13 @@ The protocol targets a healthy share of free debt to back redemptions. When rede
 
 - **Proportional adjustment**
   - Setup: Two free‑debt borrowers, Alice owes 600, Bob owes 400. Total free debt = 1,000.
-  - Redemption: A user redeems 100 `Coin` at the oracle price (ignoring fees for simplicity).
-  - Result: Total free debt becomes 900. Alice’s computed debt drops to 540 (−60), Bob’s to 360 (−40). Collateral is seized pro‑rata from both to fund the redeemer.
+  - Redemption: A user redeems 100 `Coin` from Bob at the oracle price (ignoring fees for simplicity).
+  - Result: Total free debt becomes 900. Bob’s debt drops to 300 (−100) while Alice's remains unchanged. Collateral is seized pro‑rata from Bob to fund the redeemer.
 
 - **Effect of the redemption fee**
   - Setup: Same as above, with a 0.3% redemption fee.
-  - Redemption: User redeems 100 `Coin`; they receive slightly less collateral than the theoretical amount.
-  - Result: The collateral shortfall (the fee) remains in the system, benefiting remaining free‑debt borrowers collectively (their net equity is marginally higher than with a zero‑fee redemption).
-
-- **Paid vs free isolation**
-  - Setup: Carol holds a paid‑debt position; Dave holds a free‑debt position of equal size.
-  - Redemption: A user redeems 50 `Coin`.
-  - Result: Only Dave’s side is affected (his debt decreases and collateral is seized pro‑rata). Carol’s paid‑debt position is untouched.
+  - Redemption: User redeems 100 `Coin` from Bob; The user receive slightly less collateral than the fair price according to the oracle.
+  - Result: The collateral shortfall (the fee) remains in the system, benefiting Bob.
 
 ## What this means for users
 

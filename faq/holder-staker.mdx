@@ -1,0 +1,45 @@
+---
+title: 'Holder & Staker FAQ'
+description: 'Frequently asked questions for Coin holders and Vault stakers'
+sidebar: false
+icon: 'coins'
+---
+
+# Holder & Staker FAQ
+
+<AccordionGroup>
+  <Accordion title="How do holders exit at $1 if DEX liquidity is thin?">
+    Two paths: redemptions (Coin → collateral from free‑debt pool) and the PSM (Coin → reference asset, if enabled). Redemptions always depend on free debt and redeemable collateral; PSM sells depend on on‑hand asset liquidity.
+  </Accordion>
+
+  <Accordion title="Where does the Vault staking yield come from?">
+    Paid borrowers’ interest (after protocol/local fees) is minted as Coin to the Vault.
+  </Accordion>
+
+  <Accordion title="Are staked assets rehypothecated?">
+    No. The Vault simply holds Coin and reflects interest minted to it.
+  </Accordion>
+  
+  <Accordion title="Is every `Coin` always 100% redeemable?">
+    No. Monolith is intentionally partially redeemable: only free‑debt collateral is used for redemptions. If free‑debt capacity or redeemable collateral is scarce, redemptions may be limited until borrowers migrate to free debt or the controller nudges the system back into balance. The PSM (if enabled) offers an additional convertibility path.
+  </Accordion>
+
+  <Accordion title="How does Monolith protect me in the event of borrowers bad debt?">
+    First, unsafe loans are liquidated in bounded chunks with an incentive, restoring solvency. If a position becomes irrecoverable, a write‑off socializes the loss across all borrowers.
+  </Accordion>
+
+  <Accordion title="How does Monolith maintain the dollar peg?">
+    Three layers: (1) Redemptions convert Coin → collateral from free‑debt borrowers at the oracle price minus a small fee (2) the interest controller adjusts borrow rates using the free‑debt ratio as an indirect price oracle (thin buffer → higher rates; ample buffer → lower rates) (3) the PSM (if enabled) adds direct Coin ↔ reference‑asset convertibility. Arbitrage across these keeps price near $1.
+  </Accordion>
+
+  <Accordion title="Can my Monolith coins be upgraded or frozen?">
+    No. Coin is a minimal ERC‑20 minted/burned by the Lender. There is no pause, blacklist, or upgrade hook in any Monolith contracts.
+  </Accordion>
+
+  <Accordion title="How are different Monolith coins different from each other?">
+    Each instance issues its own Coin backed by its chosen collateral, oracle, parameters (collateral factor, minDebt, fees, target band), and optional PSM setup. Risk/behavior can differ; always review the instance’s parameters before holding or staking.
+  </Accordion>
+  
+</AccordionGroup>
+
+

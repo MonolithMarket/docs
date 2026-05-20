@@ -1,235 +1,213 @@
 ---
 title: 'Integration Guide'
-description: 'Technical guide for integrating with Monolith protocol'
+description: 'How to integrate with Monolith contracts from Solidity and JavaScript'
 icon: 'plug'
 ---
 
-# Integration Guide
-
 ## Overview
 
-This guide provides technical details for integrating with the Monolith protocol.
+Monolith is a permissionless stablecoin factory. There is no off-chain API, SDK, or indexer — all interactions go through on-chain contracts. This guide shows the core flows.
 
-## Prerequisites
+Before reading, make sure you have the [contract addresses](/developers/contract-addresses) for your chain.
 
-- Solidity ^0.8.0
-- Web3.js or Ethers.js
-- Basic understanding of DeFi protocols
+## Core contracts
 
-## Smart Contract Integration
+| Contract | Role |
+|---|---|
+| `Factory` | Deploys new instances; manages protocol fees |
+| `Lender` | Per-instance core: borrow, repay, liquidate, redeem, PSM |
+| `Coin`    | Per-instance ERC‑20 stablecoin |
+| `Vault`   | Per-instance ERC‑4626 staked vault (yield-bearing) |
+| `Lens`    | Read-only helpers (preview redeem, synced debt) |
+| `Metadata` | Per-Lender branding (URLs, logos, description) |
 
-### Importing Interfaces
+## Deploying a new instance
+
+`Factory.deploy(DeployParams)` creates a `Lender`, `Coin`, and `Vault` in a single transaction and returns their addresses.
 
 ```solidity
-import "@monolith/contracts/interfaces/IStablecoinFactory.sol";
-import "@monolith/contracts/interfaces/IInterestRateController.sol";
-import "@monolith/contracts/interfaces/IPegStabilityModule.sol";
+interface IFactory {
+    struct DeployParams {
+        string  name;
+        string  symbol;
+        address collateral;
+        address psmAsset;                   // address(0) to disable PSM
+        address psmVault;                   // address(0) or ERC4626
+        address feed;                       // Chainlink-style
+        uint256 collateralFactor;           // max 8500 (85%)
+        uint256 minDebt;                    // must be >= factory.minDebtFloor()
+        uint256 timeUntilImmutability;      // seconds, max 1460 days (~4 years)
+        address operator;
+        address manager;
+        uint64  halfLife;                   // 12 hours .. 30 days
+        uint16  targetFreeDebtRatioStartBps; // >= 500, <= end
+        uint16  targetFreeDebtRatioEndBps;   // <= 9500
+        uint16  redeemFeeBps;               // <= 500 (5%)
+        uint32  stalenessThreshold;         // oracle max staleness (seconds)
+        uint16  maxBorrowDeltaBps;          // 50..200
+        uint128 psmVaultMinTotalSupply;     // required if psmVault != 0
+    }
+
+    function deploy(DeployParams memory params) external returns (address lender, address coin, address vault);
+}
 ```
 
-### Basic Integration Example
+See [Stablecoin Factory](/protocol/stablecoin-factory) for parameter guidance.
+
+## Borrowing and managing a position
+
+`Lender.adjust` is the single entry point for all position changes: deposit/withdraw collateral, borrow/repay debt, switch between paid and free (redeemable) debt modes.
 
 ```solidity
-contract MyProtocol {
-    IStablecoinFactory public factory;
-    IInterestRateController public controller;
+interface ILender {
+    // collateralDelta and debtDelta are signed: positive = deposit/borrow, negative = withdraw/repay.
+    function adjust(
+        address account,
+        int256  collateralDelta,
+        int256  debtDelta,
+        bool    chooseRedeemable
+    ) external;
 
-    constructor(address _factory, address _controller) {
-        factory = IStablecoinFactory(_factory);
-        controller = IInterestRateController(_controller);
-    }
-
-    function createStablecoin(
-        string memory name,
-        string memory symbol,
-        address collateral
-    ) external returns (address) {
-        return factory.createStablecoin(name, symbol, collateral);
-    }
+    // Overload without the status flag (keeps current setting).
+    function adjust(
+        address account,
+        int256  collateralDelta,
+        int256  debtDelta
+    ) external;
 }
 ```
 
-## Frontend Integration
+Example — deposit 1 WETH and borrow 1,000 Coin in paid-debt mode:
 
-### Connecting with Web3
-
-```javascript
-import { ethers } from 'ethers';
-import { StablecoinFactory__factory } from '@monolith/contracts';
-
-// Connect to provider
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const signer = provider.getSigner();
-
-// Connect to contract
-const factoryAddress = '0x...'; // From contract addresses page
-const factory = StablecoinFactory__factory.connect(factoryAddress, signer);
+```solidity
+IERC20(weth).approve(lender, 1 ether);
+ILender(lender).adjust(msg.sender, int256(1 ether), int256(1_000e18), false);
 ```
 
-### Deploying a Stablecoin
+Example — repay all debt and withdraw all collateral:
 
-```javascript
-async function deployStablecoin(name, symbol, collateralAddress) {
-    try {
-        const tx = await factory.createStablecoin(name, symbol, collateralAddress);
-        await tx.wait();
+```solidity
+uint256 debt       = ILender(lender).getDebtOf(msg.sender);
+uint256 collateral = ILender(lender).collateralBalances(msg.sender);
+IERC20(coin).approve(lender, debt);
+ILender(lender).adjust(msg.sender, -int256(collateral), -int256(debt), false);
+```
 
-        const stablecoinAddress = await factory.getStablecoin(name);
-        console.log('Stablecoin deployed at:', stablecoinAddress);
+Delegation (`lender.delegate(address, bool)`) lets another address manage the position on the owner's behalf.
 
-        return stablecoinAddress;
-    } catch (error) {
-        console.error('Deployment failed:', error);
-        throw error;
-    }
+## Staking the Coin
+
+`Vault` is a standard ERC‑4626. Yield comes from interest paid by borrowers in paid-debt mode.
+
+```solidity
+// Stake
+IERC20(coin).approve(vault, amount);
+uint256 shares = IERC4626(vault).deposit(amount, msg.sender);
+
+// Unstake
+uint256 assets = IERC4626(vault).redeem(shares, msg.sender, msg.sender);
+```
+
+Note: the first depositor burns `1e16` shares (`MIN_SHARES`) to prevent the ERC‑4626 inflation attack.
+
+## Redemption (arbitrage)
+
+Anyone can redeem `Coin` for a redeemable borrower's collateral at oracle price minus `redeemFeeBps`.
+
+```solidity
+interface ILender {
+    function redeem(address borrower, uint amountIn, uint minAmountOut)
+        external returns (uint amountOut);
 }
 ```
 
-### Borrowing Stablecoins
+Preview the outcome off-chain via `Lens` (simulates without mutating state):
 
-```javascript
-async function borrowStablecoins(stablecoinAddress, amount, collateralAmount) {
-    // First deposit collateral
-    const depositTx = await vault.deposit(collateralAddress, collateralAmount);
-    await depositTx.wait();
-
-    // Then borrow stablecoins
-    const borrowTx = await vault.borrow(stablecoinAddress, amount);
-    await borrowTx.wait();
-
-    return borrowTx.hash;
+```solidity
+interface ILens {
+    function previewRedeem(address lender, address borrower, uint256 amountIn)
+        external view returns (uint256 coinIn, uint256 amountOut);
 }
 ```
 
-## API Integration
+See [Redemptions](/protocol/redemptions) for the mechanism.
 
-### REST API Endpoints
+## PSM (if enabled on the instance)
 
-```bash
-# Get protocol statistics
-GET /api/v1/protocol/stats
+If `psmAsset` was configured at deployment, anyone can convert between `Coin` and the PSM asset at 1:1 (decimals-adjusted).
 
-# Get user positions
-GET /api/v1/users/{address}/positions
-
-# Get stablecoin information
-GET /api/v1/stablecoins/{address}
-```
-
-### WebSocket Events
-
-```javascript
-// Connect to WebSocket
-const ws = new WebSocket('wss://api.monolith.fi/v1/events');
-
-// Listen for liquidation events
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'liquidation') {
-        handleLiquidation(data);
-    }
-};
-```
-
-## SDK Usage
-
-### Installation
-
-```bash
-npm install @monolith/sdk
-```
-
-### Basic Usage
-
-```javascript
-import { MonolithSDK } from '@monolith/sdk';
-
-const sdk = new MonolithSDK({
-    provider: window.ethereum,
-    network: 'mainnet'
-});
-
-// Get all stablecoins
-const stablecoins = await sdk.getStablecoins();
-
-// Create a new stablecoin
-const tx = await sdk.createStablecoin({
-    name: 'My Stablecoin',
-    symbol: 'MST',
-    collateral: '0xA0b86a33E6441e88C5F2712C3E9b74B8F0F7F5d8'
-});
-```
-
-## Error Handling
-
-### Common Errors
-
-```javascript
-try {
-    await factory.createStablecoin(name, symbol, collateral);
-} catch (error) {
-    if (error.message.includes('Insufficient collateral')) {
-        // Handle insufficient collateral error
-    } else if (error.message.includes('Invalid parameters')) {
-        // Handle invalid parameters error
-    } else {
-        // Handle other errors
-    }
+```solidity
+interface ILender {
+    function sell(uint coinIn, uint minAssetOut) external returns (uint assetOut);         // no fee
+    function buy (uint assetIn, uint minCoinOut) external returns (uint coinOut);          // pre-deadline, small ramping fee
 }
 ```
 
-## Testing
+## Querying state
 
-### Local Development
+`Lender` exposes direct getters; `Lens` provides a version that simulates accrual before reading.
 
-```bash
-# Start local blockchain
-npm run chain
+```solidity
+// Already-accrued debt (from Lender)
+uint256 debt = ILender(lender).getDebtOf(account);
 
-# Deploy contracts locally
-npm run deploy:local
+// Debt including pending interest (from Lens)
+uint256 syncedDebt = ILens(lens).getDebtOf(lender, account);
 
-# Run tests
-npm test
+// Oracle state
+(uint price, bool reduceOnly, bool allowLiquidations) = ILender(lender).getCollateralPrice();
 ```
 
-### Testnet Deployment
+## Liquidating a position
+
+```solidity
+interface ILender {
+    function liquidate(address borrower, uint repayAmount, uint minCollateralOut)
+        external returns (uint collateralOut);
+}
+```
+
+Up to 25% of a position's debt (or the full position if smaller) can be liquidated per call, with a minimum chunk of `10_000e18`. Incentive scales from 0% at the collateral factor up to 10% at `collateralFactor + 500 bps`. See [Liquidations](/protocol/liquidations).
+
+## Events to index
+
+Factory:
+
+- `Deployed(address indexed lender, address indexed coin, address indexed vault)`
+
+Per Lender (subset most integrators care about):
+
+- `PositionAdjusted(address indexed account, int collateralDelta, int debtDelta)`
+- `RedemptionStatusUpdated(address indexed account, bool isRedeemable)`
+- `Liquidated(address indexed borrower, address indexed liquidator, uint repayAmount, uint collateralOut)`
+- `Redeemed(address indexed account, address indexed borrower, uint amountIn, uint amountOut)`
+- `Sold(address indexed account, uint coinIn, uint assetOut)`
+- `Bought(address indexed account, uint assetIn, uint coinOut)`
+- `WrittenOff(address indexed borrower, address indexed to, uint debt, uint collateral)`
+
+See the [Lender reference](/reference/Lender) for the full list.
+
+## JavaScript example (ethers v6)
 
 ```javascript
-// Use testnet addresses for development
-const TESTNET_ADDRESSES = {
-    factory: '0x...',
-    controller: '0x...'
-};
+import { ethers } from "ethers";
+
+const provider = new ethers.BrowserProvider(window.ethereum);
+const signer   = await provider.getSigner();
+
+const lender = new ethers.Contract(lenderAddress, lenderAbi, signer);
+const coin   = new ethers.Contract(coinAddress,   erc20Abi,  signer);
+
+// Deposit 1 WETH, borrow 1000 Coin, paid-debt mode
+await (await weth.approve(lenderAddress, ethers.parseEther("1"))).wait();
+await (await lender.adjust(
+  await signer.getAddress(),
+  ethers.parseEther("1"),          // +1 WETH
+  ethers.parseUnits("1000", 18),   // +1000 Coin debt
+  false,                           // chooseRedeemable = false (paid debt)
+)).wait();
 ```
 
-## Best Practices
+## Source
 
-### Security
-- Always validate contract addresses
-- Use multicall for batch operations
-- Implement proper error handling
-- Test thoroughly on testnets
-
-### Performance
-- Use events for monitoring changes
-- Implement caching for frequently accessed data
-- Batch transactions when possible
-- Monitor gas usage
-
-### User Experience
-- Provide clear error messages
-- Show loading states during transactions
-- Implement transaction confirmations
-- Add wallet connection status
-
-## Support
-
-### Developer Resources
-- [GitHub Repository](https://github.com/MonolithMarket)
-- [Discord Developer Channel](https://discord.gg/TBNcPpvJHZ)
-- [Technical Documentation](https://docs.monolith.fi)
-
-### Getting Help
-- Open issues on GitHub
-- Ask questions in Discord
-- Check existing integrations for examples
+ABIs and Solidity sources: [github.com/MonolithMarket/Monolith](https://github.com/MonolithMarket/Monolith).
