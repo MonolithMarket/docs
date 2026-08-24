@@ -78,21 +78,23 @@ Liquidates an undercollateralized position to maintain protocol solvency. Oracle
 ### redeem
 
 ```solidity
-function redeem(uint amountIn, uint minAmountOut) external returns (uint amountOut)
+function redeem(address borrower, uint amountIn, uint minAmountOut) external returns (uint amountOut)
 ```
 
-Redeems Coin for collateral from the redeemable pool at the oracle price minus a redemption fee.
+Redeems Coin for collateral from one redeemable borrower at the oracle price minus a redemption fee. The redeemer picks that borrower. There is no shared redeemable pool.
 
 **Parameters:**
-- `amountIn`: Amount of Coin to redeem (in wei)
+- `borrower`: Address of the free-debt position to redeem against
+- `amountIn`: Max amount of Coin to redeem (in wei). Clamped to that borrower's debt and collateral.
 - `minAmountOut`: Minimum collateral amount to receive (slippage protection)
 
 **Returns:**
 - `amountOut`: Amount of collateral received
 
 **Requirements:**
+- `borrower` must be redeemable (free debt) with collateral and debt
 - Redemptions must be allowed (fresh oracle)
-- Redeemable borrowers must have sufficient collateral to redeem and debt to repay
+- Remaining debt after the redeem must be 0 or ≥ `minDebt`
 - `amountOut` must be ≥ `minAmountOut`
 
 **Redemption Amount:**
