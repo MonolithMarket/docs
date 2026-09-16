@@ -12,10 +12,9 @@ Liquidations close unsafe positions when a borrower’s debt exceeds their borro
 
 ## Triggers
 
-Liquidations are enabled only when a valid, sufficiently fresh oracle price is available. A position becomes liquidatable when:
+A position becomes liquidatable when borrowing power < debt at the current oracle price, where borrowing power = price × collateral × collateralFactor.
 
-- Borrowing power < debt at the current price, where borrowing power = price × collateral × collateralFactor.
-- When liquidations are enabled. Liquidations are disabled when no valid price is provided by the feed.
+Liquidations require `allowLiquidations` from `getCollateralPrice()`. That flag is `false` only when the oracle feed reverts or returns a non-positive price. A stale feed does **not** disable liquidations: it enables reduce-only mode and decays the reported price over `STALENESS_UNWIND_DURATION` (24 hours) instead.
 
 ## Process
 
@@ -50,7 +49,7 @@ This design pays more to liquidators as positions drift further into unsafe terr
 ## Limits and safety valves
 
 - Chunked liquidations: At most ~25% of a borrower’s debt can be liquidated per call (subject to the 10,000 `Coin` minimum). This ensures that the liquidation incentive is sufficient to attract liquidators.
-- Oracle‑gated: If the oracle is stale/invalid, liquidations are temporarily disabled to avoid mispricing.
+- Oracle-gated: If the oracle feed reverts or returns a non-positive price, liquidations are disabled. Stale prices keep liquidations enabled but switch the market to reduce-only and apply price decay.
 - Write‑off path: If a position is effectively irrecoverable (debt > 100× collateral value), remaining debt can be redistributed among borrowers, and the liquidator receives the borrower’s remaining collateral (negligible).
 
 ## Example

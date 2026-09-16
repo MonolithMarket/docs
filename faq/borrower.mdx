@@ -25,7 +25,7 @@ icon: 'dollar-sign'
   </Accordion>
 
   <Accordion title="What is a write-off?">
-    A last‑resort path for irrecoverable positions: if your debt exceeds the value of your collateral, the protocol can wipe your remaining debt, redistribute it proportionally across all borrowers, and transfer your remaining collateral to the caller. It can happen at the end of liquidations and can be called directly. The purpose of write offs is to socialize losses among borrowers to ensure the system stays solvent.
+    A last-resort path for irrecoverable positions: if your debt is more than 100 times your collateral value at the oracle price (`debt > 100 × collateralValue`), the protocol can wipe your remaining debt, redistribute it proportionally across all borrowers, and transfer your remaining collateral to the caller. It can happen at the end of liquidations and can be called directly via `writeOff()`. The purpose of write-offs is to socialize losses among borrowers so the system stays solvent. See [Bad Debt Socialization](/protocol/bad-debt-socialization).
   </Accordion>
 
   <Accordion title="How much of my position can be liquidated at a time?">

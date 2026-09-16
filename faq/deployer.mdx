@@ -14,7 +14,7 @@ icon: 'industry'
   </Accordion>
 
   <Accordion title="Which parameters are mandatory vs optional in deployment?">
-    Required: `name`, `symbol`, `collateral`, `feed`, `collateralFactor`, `minDebt`, `timeUntilImmutability`. Optional: `psmAsset`, `psmVault`, `operator`, `manager` (use `address(0)` to omit operator/manager).
+    `Factory.deploy(DeployParams)` requires the full struct. Always set: `name`, `symbol`, `collateral`, `feed`, `collateralFactor`, `minDebt`, `timeUntilImmutability`, `halfLife` (12 hours to 30 days), `targetFreeDebtRatioStartBps` (>= 500 and <= end), `targetFreeDebtRatioEndBps` (<= 9500), `redeemFeeBps` (<= 500), `stalenessThreshold`, and `maxBorrowDeltaBps` (50 to 200). Optional references: `psmAsset`, `psmVault`, `operator`, `manager` (use `address(0)` to omit). If `psmVault` is non-zero, `psmVaultMinTotalSupply` must be > 0 and the vault asset must match `psmAsset`. Aligns with the [Integration Guide](/developers/integration-guide) and `Factory.DeployParams` / `Lender` constructor checks.
   </Accordion>
 
   <Accordion title="When should I enable the PSM and when should I skip it?">
@@ -26,7 +26,7 @@ icon: 'industry'
   </Accordion>
 
   <Accordion title="Who controls fees and where do they accrue?">
-    The Factory operator sets a global fee (bps) capped at 10% and per‑instance overrides. Global reserves accrue at the Lender and are pulled by the Factory’s `feeRecipient`. Local reserves accrue to the instance and are pullable by the instance operator.
+    The Factory operator sets a global fee (bps) capped at 10% and per-instance overrides. Global reserves accrue at the Lender and are pulled by the Factory's `feeRecipient` via `pullGlobalReserves`. Local reserves accrue on the instance; anyone may call `pullLocalReserves()`, which mints the accrued amount to the instance `operator` (the call is permissionless; the recipient is always the operator).
   </Accordion>
 
   <Accordion title="Can I change operators or managers after deployment?">
@@ -34,7 +34,7 @@ icon: 'industry'
   </Accordion>
 
   <Accordion title="What is the difference between the operator and the manager?">
-    The operator has broader authority: can set/revoke pending operator, set local reserve fee bps, pull local reserves, and perform all pre‑deadline parameter updates that the manager can. The manager is a secondary role that can adjust a subset of parameters (e.g., half‑life, target free‑debt ratio, redeem fee) before immutability but cannot pull reserves or change roles.
+    The operator has broader authority: can set/revoke pending operator, set local reserve fee bps, and perform all pre-deadline parameter updates that the manager can. Local reserve pulls are permissionless (`pullLocalReserves` mints to the operator, not to the caller). The manager is a secondary role that can adjust a subset of parameters (for example half-life, target free-debt ratio, redeem fee, max borrow delta) before immutability but cannot change roles or local reserve fee bps.
   </Accordion>
 
 </AccordionGroup>

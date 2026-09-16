@@ -17,7 +17,7 @@ Write‑offs are guarded by strict conditions and are typically invoked automati
 Bad debt identification and handling are governed by the `writeOff(borrower, to)` flow:
 
 - Accrue and sync: Interest is accrued and the borrower’s internal accounting is synchronized.
-- Price gate: The oracle must report a valid, sufficiently fresh price; otherwise socialization is disabled.
+- Price gate: Write-offs require `allowLiquidations` from `getCollateralPrice()`. That fails only when the oracle feed reverts or returns a non-positive price. Staleness alone does not disable write-offs (it enables reduce-only and decays price).
 - Write off threshold: If `debt > 100 × collateralValue` at the oracle price, the collateral value is considered negligible and the position qualifies for write‑off.
 - Three actions then occur atomically:
   1) Delete borrower debt: The borrower’s entire outstanding debt is wiped.
