@@ -22,7 +22,7 @@ icon: 'book-open'
   </Accordion>
 
   <Accordion title="What happens during extreme oracle outages?">
-    The protocol switches to reduce-only mode and disables liquidations/redemptions/write-offs until fresh data arrives. This prevents mispriced liquidations and redemptions while still allowing users to deleverage and exit safely.
+    If the feed is stale past `stalenessThreshold`, the protocol enters reduce-only mode and decays the collateral price over 24 hours. Liquidations, redemptions, and write-offs stay enabled while `allowLiquidations` is true. Those actions are disabled only when the oracle feed reverts or returns a non-positive price. Reduce-only still lets users repay and withdraw within the safety rules so they can deleverage.
   </Accordion>
 
   <Accordion title="Is the system upgradeable or governed after launch?">

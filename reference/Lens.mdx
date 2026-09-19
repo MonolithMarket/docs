@@ -36,7 +36,7 @@ Simulates the outcome of redeeming `amountIn` Coin against `borrower`'s collater
 - `amountIn` is zero
 - `borrower` is not redeemable (`isRedeemable(borrower) == false`)
 - `borrower` has no collateral
-- The oracle does not allow liquidations (stale/invalid price or reduce-only)
+- `allowLiquidations` is false (oracle feed reverted or returned a non-positive price; staleness/reduce-only alone does not cause this)
 - `borrower` has no debt
 - The computed `amountOut` is zero or exceeds the borrower's collateral balance
 

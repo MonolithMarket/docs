@@ -47,7 +47,7 @@ Adjusts a user's position by modifying collateral and/or debt. This is the prima
 function liquidate(address borrower, uint repayAmount, uint minCollateralOut) external returns (uint collateralOut)
 ```
 
-Liquidates an undercollateralized position to maintain protocol solvency. Oracle‑gated; disabled when price is stale/invalid.
+Liquidates an undercollateralized position to maintain protocol solvency. Oracle-gated: disabled when the feed reverts or returns a non-positive price (staleness alone does not disable liquidations).
 
 **Parameters:**
 - `borrower`: Address of the position to liquidate
@@ -93,7 +93,7 @@ Redeems Coin for collateral from one redeemable borrower at the oracle price min
 
 **Requirements:**
 - `borrower` must be redeemable (free debt) with collateral and debt
-- Redemptions must be allowed (fresh oracle)
+- Redemptions must be allowed (`allowLiquidations` from `getCollateralPrice()`; disabled on feed revert / non-positive price, not on staleness alone)
 - Remaining debt after the redeem must be 0 or ≥ `minDebt`
 - `amountOut` must be ≥ `minAmountOut`
 
@@ -256,12 +256,12 @@ Returns the current debt amount for an account, including accrued interest.
 function getCollateralPrice() public view returns (uint price, bool reduceOnly, bool allowLiquidations)
 ```
 
-Returns the normalized collateral price and safety flags.
+Returns the normalized collateral price and safety flags from `getCollateralPrice()`.
 
 **Returns:**
-- `price`: Normalized to `36 - collateralDecimals` digits (never zero inside consumers)
-- `reduceOnly`: True if only reductions allowed
-- `allowLiquidations`: True if liquidations/redemptions/write‑offs permitted
+- `price`: Normalized to `36 - collateralDecimals` digits (floored to 1 inside the function to avoid division by zero in consumers)
+- `reduceOnly`: True when expanding debt/collateral is blocked (stale oracle, invalid/zero feed price, feed revert, or system undercollateralization)
+- `allowLiquidations`: True if liquidations, redemptions, and write-offs are permitted. Set to `false` only when the oracle feed reverts or returns a non-positive price. Staleness sets `reduceOnly` and decays `price` over 24 hours; it does not clear `allowLiquidations`.
 
 ---
 
@@ -390,10 +390,11 @@ Immediately enables immutability (locks certain configuration permanently).
 function pullLocalReserves() external
 ```
 
-Mints accumulated local reserves to the caller (operator only).
+Permissionlessly mints accumulated local reserves to the instance `operator` (not to `msg.sender`).
 
-**Requirements:**
-- Caller must be operator
+**Behavior:**
+- Accrues interest and PSM profit, then mints `accruedLocalReserves` of Coin to `operator` and resets the accrual to 0
+- Callable by anyone; early-returns if there is nothing to pull
 
 ---
 
