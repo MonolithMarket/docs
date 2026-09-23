@@ -14,7 +14,7 @@ icon: 'industry'
   </Accordion>
 
   <Accordion title="Which parameters are mandatory vs optional in deployment?">
-    `Factory.deploy(DeployParams)` requires the full struct. Always set: `name`, `symbol`, `collateral`, `feed`, `collateralFactor`, `minDebt`, `timeUntilImmutability`, `halfLife` (12 hours to 30 days), `targetFreeDebtRatioStartBps` (>= 500 and <= end), `targetFreeDebtRatioEndBps` (<= 9500), `redeemFeeBps` (<= 500), `stalenessThreshold`, and `maxBorrowDeltaBps` (50 to 200). Optional references: `psmAsset`, `psmVault`, `operator`, `manager` (use `address(0)` to omit). If `psmVault` is non-zero, `psmVaultMinTotalSupply` must be > 0 and the vault asset must match `psmAsset`. Matches the [Integration Guide](/developers/integration-guide) and on-chain `Factory.DeployParams` / `Lender` constructor checks.
+    `Factory.deploy(DeployParams)` requires the full struct. Always set: `name`, `symbol`, `collateral`, `feed`, `collateralFactor`, `minDebt`, `timeUntilImmutability`, `halfLife` (12 hours to 30 days), `targetFreeDebtRatioStartBps` (at least 500 and at most end), `targetFreeDebtRatioEndBps` (at most 9500), `redeemFeeBps` (at most 500), `stalenessThreshold`, and `maxBorrowDeltaBps` (50 to 200). Optional references: `psmAsset`, `psmVault`, `operator`, `manager` (use `address(0)` to omit). If `psmVault` is non-zero, `psmVaultMinTotalSupply` must be greater than 0 and the vault asset must match `psmAsset`. Matches the [Integration Guide](/developers/integration-guide) and on-chain `Factory.DeployParams` / `Lender` constructor checks.
   </Accordion>
 
   <Accordion title="When should I enable the PSM and when should I skip it?">
