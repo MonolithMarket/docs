@@ -34,20 +34,20 @@ The protocol targets a healthy share of free debt to back redemptions. When rede
 
 ## Examples: impact on free‑debt borrowers
 
-- **Proportional adjustment**
+- **Per-borrower redemption**
   - Setup: Two free‑debt borrowers, Alice owes 600, Bob owes 400. Total free debt = 1,000.
   - Redemption: A user redeems 100 `Coin` from Bob at the oracle price (ignoring fees for simplicity).
-  - Result: Total free debt becomes 900. Bob’s debt drops to 300 (−100) while Alice's remains unchanged. Collateral is seized pro‑rata from Bob to fund the redeemer.
+  - Result: Total free debt becomes 900. Bob’s debt drops to 300 (−100) while Alice's remains unchanged. Collateral of equal value is seized only from Bob to fund the redeemer.
 
 - **Effect of the redemption fee**
   - Setup: Same as above, with a 0.3% redemption fee.
-  - Redemption: User redeems 100 `Coin` from Bob; The user receive slightly less collateral than the fair price according to the oracle.
+  - Redemption: User redeems 100 `Coin` from Bob; The user receives slightly less collateral than the fair price according to the oracle.
   - Result: The collateral shortfall (the fee) remains in the system, benefiting Bob.
 
 ## What this means for users
 
 - `Coin` holders: You can always find exit liquidity via redemption, subject to current redeemable capacity and fees.
-- Borrowers in free mode: You pay no interest, but your collateral is subject to pro‑rata redemptions. Your debt typically falls during active redemption periods.
+- Borrowers in free mode: You pay no interest, but a holder can redeem against your specific position and seize your collateral while repaying your debt. Other free-debt borrowers are not haircut. Your debt falls only when you are the chosen borrower.
 - Borrowers in paid mode: You pay interest but are insulated from redemptions.
 
 ## Related
