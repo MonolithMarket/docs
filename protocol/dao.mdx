@@ -1,0 +1,78 @@
+---
+title: 'DAO'
+description: 'Optional per-market DAO governance for Monolith instances'
+icon: 'landmark'
+---
+
+## Overview
+
+A **DAO** is optional per-market governance attached to a Monolith instance (`Lender` / `Coin` / `Vault`). Deployers can launch a new market with a DAO in one flow, or attach a DAO to an existing market.
+
+In the UI and these docs the product name is **DAO**. On-chain the factory may still be named CoinDAOFactory.
+
+See [Contract Addresses](/developers/contract-addresses) for DAO Factory and implementation addresses. DAO launches use the **V2** Monolith Factory.
+
+## Components
+
+Each DAO is a set of EIP-1167 clones (CREATE2, predictable via salt) of shared implementations:
+
+- **GOV** - governance token with a fixed supply of 10,000,000
+- **Staked GOV (sGOV)** - non-transferable wrapper that carries voting power; Coin revenue can be credited to stakers on distribute
+- **Governor + Timelock** - proposal and execution path; the Timelock holds the treasury
+- **Revenue Router** - splits Coin revenue (default at launch: 100% of the routed share to GOV staking)
+- **Coin staking rewards + rewards funder** - GOV emissions to Coin stakers in yearly tranches
+- **Vesting wallets** - Monolith (fixed 2%), treasury, and optional deployer vesting
+
+## Launch paths
+
+### 1. New market and DAO together
+
+Call the DAO Factory `deploy(userSalt, govParams, monolithParams, manager)`. This deploys a new Monolith market through the **V2** Factory and attaches the DAO in the same flow.
+
+### 2. Attach a DAO to an existing market
+
+Call `deployForExistingCoin(userSalt, govParams, lender)`. Before this, the current lender operator must set the DAO Factory as pending operator:
+
+```solidity
+lender.setPendingOperator(daoFactory);
+```
+
+The DAO Factory then accepts and completes the handoff as part of attaching governance.
+
+## GOV allocation
+
+Fixed GOV supply: **10,000,000**.
+
+| Bucket | Rule |
+|---|---|
+| Monolith | Fixed 2% (200 bps) into Monolith vesting (4-year linear) |
+| Deployer stake | Optional 0–20% into deployer vesting |
+| Remainder | Split by weights totaling 9800 bps of the leftover supply |
+
+Remainder weights (sum 9800):
+
+| Weight | Share of remainder | Approx. of total supply when deployer stake is 0% |
+|---|---|---|
+| Coin staking rewards | 6500 | ~65% |
+| Immediate allocation | 500 | ~5% |
+| Vested treasury | 2800 | ~28% |
+
+Immediate allocation goes to the deployer recipient, or to the Timelock when unset. Division dust from the remainder split is assigned to the vested treasury so the fixed supply is fully allocated.
+
+## Governance defaults
+
+Protocol defaults used at launch (from UI / factory constants):
+
+| Parameter | Default |
+|---|---|
+| Timelock delay | 2 days |
+| Voting delay | ~1 day (7200 blocks) |
+| Voting period | ~5 days (36000 blocks) |
+| Proposal threshold | 0.1% of GOV supply as sGOV voting power |
+| Quorum | 0.1% of fixed GOV supply (For + Abstain); does not move with amount staked |
+| Coin staking reward duration | 365 days |
+| Yearly tranche bps (of rewards reserve) | 3250, 2750, 2250, 1750 |
+
+## In the UI
+
+Monolith exposes a DAOs list and per-DAO pages for Overview, Earn, Revenue, and Technical details. Prefer the user-facing name **DAO** when referring to this feature.

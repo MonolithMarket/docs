@@ -4,35 +4,71 @@ description: "Deployed Monolith contract addresses"
 icon: "address-book"
 ---
 
-Monolith consists of a small set of singleton contracts per chain, plus per-instance `Lender`, `Coin`, and `Vault` contracts deployed by the `Factory`.
+Monolith consists of a small set of singleton contracts per chain, plus per-instance `Lender`, `Coin`, and `Vault` contracts deployed by a `Factory`. There are two Factory deployments on mainnet (**V1** and **V2**). New markets deploy through **V2**. Optional per-market **DAO** governance is deployed by the DAO Factory (on-chain: CoinDAOFactory), which is wired to the V2 Monolith Factory.
 
 ## Singletons
 
 ### Ethereum Mainnet
 
+#### Monolith Factories
+
 | Contract | Address |
 |---|---|
-| Factory  | [`0x6D961c9DCF1AD73566822BA4B087892e3839B849`](https://etherscan.io/address/0x6D961c9DCF1AD73566822BA4B087892e3839B849) |
-| Lens     | [`0x0f3a7cd1828698D2B6daEf081d5c319c0734fA1c`](https://etherscan.io/address/0x0f3a7cd1828698D2B6daEf081d5c319c0734fA1c) |
+| Factory (V2, current) | [`0xc68F3e777f28c52FF9DB0276a14F59D96Aa2f931`](https://etherscan.io/address/0xc68F3e777f28c52FF9DB0276a14F59D96Aa2f931) |
+| Factory (V1, previous) | [`0x6D961c9DCF1AD73566822BA4B087892e3839B849`](https://etherscan.io/address/0x6D961c9DCF1AD73566822BA4B087892e3839B849) |
+| Lens | [`0x0f3a7cd1828698D2B6daEf081d5c319c0734fA1c`](https://etherscan.io/address/0x0f3a7cd1828698D2B6daEf081d5c319c0734fA1c) |
 | Metadata | [`0x2Afb125bB848049b54D0903A1fd365E7518f581A`](https://etherscan.io/address/0x2Afb125bB848049b54D0903A1fd365E7518f581A) |
+| Interest Model (V2) | [`0x77Fb136ed844dF83Bac1Bd6B87B0930764d5Ad6D`](https://etherscan.io/address/0x77Fb136ed844dF83Bac1Bd6B87B0930764d5Ad6D) |
+
+Lens and Metadata are shared across V1 and V2 on mainnet. Each Factory has its own InterestModel. For V1, read the address with `factory.interestModel()`.
+
+| Role | Address |
+|---|---|
+| V2 Deployer | [`0x11EC78492D53c9276dD7a184B1dbfB34E50B710D`](https://etherscan.io/address/0x11EC78492D53c9276dD7a184B1dbfB34E50B710D) |
+| V2 Operator (also Monolith beneficiary for DAO Factory) | [`0x926dF14a23BE491164dCF93f4c468A50ef659D5B`](https://etherscan.io/address/0x926dF14a23BE491164dCF93f4c468A50ef659D5B) |
+
+#### DAO Factory
+
+User-facing name: **DAO**. On-chain the factory contract may still be named CoinDAOFactory.
+
+| Contract | Address |
+|---|---|
+| DAO Factory | [`0xEc25d9A46482d00F1C1A8Be1792ECB55DbFfd7Df`](https://etherscan.io/address/0xEc25d9A46482d00F1C1A8Be1792ECB55DbFfd7Df) |
+| Monolith Factory used | V2 [`0xc68F3e777f28c52FF9DB0276a14F59D96Aa2f931`](https://etherscan.io/address/0xc68F3e777f28c52FF9DB0276a14F59D96Aa2f931) |
+| Monolith beneficiary | [`0x926dF14a23BE491164dCF93f4c468A50ef659D5B`](https://etherscan.io/address/0x926dF14a23BE491164dCF93f4c468A50ef659D5B) |
+| GOV implementation | [`0x74a5a9fB545C373DeE2411f5134d4702A881A21b`](https://etherscan.io/address/0x74a5a9fB545C373DeE2411f5134d4702A881A21b) |
+| Staked GOV implementation | [`0x7bdd1C6Eb96259A4C2B7A77030Ee775Ac2Bf3607`](https://etherscan.io/address/0x7bdd1C6Eb96259A4C2B7A77030Ee775Ac2Bf3607) |
+| Revenue router implementation | [`0xd3477B540Ba903bc577886f56550779da56E9f3F`](https://etherscan.io/address/0xd3477B540Ba903bc577886f56550779da56E9f3F) |
+| Staking rewards implementation | [`0x2D889fe0C8A2a6fE70F804e0A15C144029798Ab4`](https://etherscan.io/address/0x2D889fe0C8A2a6fE70F804e0A15C144029798Ab4) |
+| Rewards funder implementation | [`0x1c9013BF4F46f4FD699fc60EA36BbCD98116E80d`](https://etherscan.io/address/0x1c9013BF4F46f4FD699fc60EA36BbCD98116E80d) |
+| Vesting wallet implementation | [`0x2dF42D5a4F0712CfA79A4dC24aebfC87ae9f45E5`](https://etherscan.io/address/0x2dF42D5a4F0712CfA79A4dC24aebfC87ae9f45E5) |
+| Governor implementation | [`0xb85aa4260839D55C4995A9c436408d8660345b41`](https://etherscan.io/address/0xb85aa4260839D55C4995A9c436408d8660345b41) |
+| Timelock implementation | [`0x3a68B4bF0633d1A5EfD103cd75705C66bdFA0B16`](https://etherscan.io/address/0x3a68B4bF0633d1A5EfD103cd75705C66bdFA0B16) |
+
+Per-DAO instances are EIP-1167 clones (CREATE2) of these implementations. Some implementation contracts may still be pending full Etherscan verification.
 
 ### Sepolia Testnet
 
 | Contract | Address |
 |---|---|
-| Factory  | [`0x365009FA2Ddb17f386E20854E4B281827619E4D2`](https://sepolia.etherscan.io/address/0x365009FA2Ddb17f386E20854E4B281827619E4D2) |
-| Lens     | [`0xf4DddA5149b482daF29f358986aFbA10A286116a`](https://sepolia.etherscan.io/address/0xf4DddA5149b482daF29f358986aFbA10A286116a) |
+| Factory (current) | [`0x8dDCaeb76a70b860DEaD944970bae0e955c10DA2`](https://sepolia.etherscan.io/address/0x8dDCaeb76a70b860DEaD944970bae0e955c10DA2) |
+| Lens | [`0xf4DddA5149b482daF29f358986aFbA10A286116a`](https://sepolia.etherscan.io/address/0xf4DddA5149b482daF29f358986aFbA10A286116a) |
 | Metadata | [`0x8aAb59675e123cEEFE5E05B0BC1bE8fe6101E60d`](https://sepolia.etherscan.io/address/0x8aAb59675e123cEEFE5E05B0BC1bE8fe6101E60d) |
+| DAO Factory | [`0xD48f0c7D7d2F24367f71DC00Cf9d8f5157eeCCca`](https://sepolia.etherscan.io/address/0xD48f0c7D7d2F24367f71DC00Cf9d8f5157eeCCca) |
+
+Sepolia UI currently exposes a single current Factory (no separate V1 entry). Use the address above for new testnet markets and DAO launches.
 
 ## Discovering per-instance contracts
 
 Each stablecoin instance consists of three contracts deployed by `Factory.deploy(DeployParams)`:
 
-- **Lender** — core lending contract for the instance
-- **Coin** — ERC‑20 stablecoin for the instance
-- **Vault** — ERC‑4626 staked vault for the instance
+- **Lender** - core lending contract for the instance
+- **Coin** - ERC‑20 stablecoin for the instance
+- **Vault** - ERC‑4626 staked vault for the instance
 
-Enumerate existing instances by reading the Factory:
+New markets are created on the **V2** Factory. The DAO Factory also uses the V2 Monolith Factory when launching a market together with a DAO. The V1 Factory remains for markets that were deployed there (notably **invUSD** on mainnet).
+
+Enumerate existing instances by reading the relevant Factory:
 
 ```solidity
 uint256 count = factory.deploymentsLength();
@@ -45,11 +81,13 @@ Or index the `Deployed(address indexed lender, address indexed coin, address ind
 
 ## Interest model
 
-A single `InterestModel` instance is deployed per chain by the `Factory` constructor. Read its address from the Factory:
+Each `Factory` deploys its own `InterestModel` in the constructor. Read it from that Factory:
 
 ```solidity
 address interestModel = factory.interestModel();
 ```
+
+On mainnet, the V2 Interest Model address is listed in the table above. For V1, call `interestModel()` on the V1 Factory.
 
 ## Source code
 

@@ -37,6 +37,15 @@ icon: 'industry'
     The operator has broader authority: can set/revoke pending operator, set local reserve fee bps, and perform all pre-deadline parameter updates that the manager can. Local reserve pulls are permissionless (`pullLocalReserves` mints to the operator, not to the caller). The manager is a secondary role that can adjust a subset of parameters (for example half-life, target free-debt ratio, redeem fee, max borrow delta) before immutability but cannot change roles or local reserve fee bps.
   </Accordion>
 
+
+  <Accordion title="How do I launch a market with a DAO?">
+    Use the DAO Factory `deploy(userSalt, govParams, monolithParams, manager)` path. It creates a new Monolith market on the **V2** Factory and attaches DAO governance in the same flow. See [DAO](/protocol/dao) for components, GOV allocation, and default governance parameters. Addresses are on [Contract Addresses](/developers/contract-addresses).
+  </Accordion>
+
+  <Accordion title="How do I attach a DAO to an existing market?">
+    First, as the current lender operator, call `lender.setPendingOperator(daoFactory)`. Then call the DAO Factory `deployForExistingCoin(userSalt, govParams, lender)`. The DAO Factory completes the operator handoff and deploys GOV, sGOV, Governor, Timelock, Revenue Router, staking rewards, and vesting wallets for that market. Details: [DAO](/protocol/dao).
+  </Accordion>
+
 </AccordionGroup>
 
 

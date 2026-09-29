@@ -25,6 +25,7 @@
             "pages": [
               "protocol/overview",
               "protocol/stablecoin-factory",
+              "protocol/dao",
               "protocol/paid-vs-free-debt",
               "protocol/redemptions",
               "protocol/interest-rate-controller",
