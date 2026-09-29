@@ -8,6 +8,9 @@ The Factory contract is responsible for deploying all components of a Monolith i
 
 [Contract implementation](https://github.com/MonolithMarket/Monolith/blob/main/src/Factory.sol)
 
+There are two Factory deployments on mainnet: **V1** (previous) and **V2** (current). New markets and DAO launches that create a market use **V2**. V1 remains for markets deployed there (for example invUSD). Same ABI and interface across both. See [Contract Addresses](/developers/contract-addresses) and [Stablecoin Factory](/protocol/stablecoin-factory).
+
+
 ## Constructor
 
 ```solidity
@@ -312,10 +315,10 @@ Pulls accumulated reserves from a lender deployment to the fee recipient.
 
 ## Events
 
-- `Deployed(address indexed lender, address indexed coin, address indexed vault)` — emitted by `deploy()` with the new instance addresses.
-- `CustomFeeBpsSet(address indexed lender, uint256 feeBps)` — emitted by `setCustomFeeBps()`.
-- `FeeBpsUpdated(uint256 feeBps)` — emitted by `setFeeBps()`.
-- `FeeRecipientUpdated(address indexed feeRecipient)` — emitted by `setFeeRecipient()`.
-- `PendingOperatorUpdated(address indexed pendingOperator)` — emitted by `setPendingOperator()`.
-- `OperatorUpdated(address indexed operator)` — emitted by `acceptOperator()`.
-- `ReservesPulled(address indexed lender, address indexed recipient, uint256 amount)` — emitted by `pullReserves()`.
+- `Deployed(address indexed lender, address indexed coin, address indexed vault)` - emitted by `deploy()` with the new instance addresses.
+- `CustomFeeBpsSet(address indexed lender, uint256 feeBps)` - emitted by `setCustomFeeBps()`.
+- `FeeBpsUpdated(uint256 feeBps)` - emitted by `setFeeBps()`.
+- `FeeRecipientUpdated(address indexed feeRecipient)` - emitted by `setFeeRecipient()`.
+- `PendingOperatorUpdated(address indexed pendingOperator)` - emitted by `setPendingOperator()`.
+- `OperatorUpdated(address indexed operator)` - emitted by `acceptOperator()`.
+- `ReservesPulled(address indexed lender, address indexed recipient, uint256 amount)` - emitted by `pullReserves()`.

@@ -8,6 +8,20 @@ icon: 'industry'
 
 The Stablecoin Factory enables anyone to create new Monolith instances. Each instance is a synthetic asset (e.g., a USD‑pegged stablecoin) consisting of a `Lender` (core instance logic), a `Coin` (the ERC‑20 synthetic token), and a `Vault` (an yield-bearing ERC‑4626). The Factory is also the entry-point for the protocol fee operator.
 
+
+## V1 and V2 Factories
+
+Monolith has two Factory deployments on Ethereum mainnet:
+
+- **V2 Factory (current)** - every new market deploys here. Coin ids without a version prefix resolve to V2. The DAO Factory is constructed with the V2 Monolith Factory, so DAO launches that create a new market also go through V2.
+- **V1 Factory (previous)** - kept for markets deployed there, notably **invUSD** (its first market). In the UI, that market uses a `v1-` coin id prefix (for example `v1-0`).
+
+V1 and V2 expose the same Factory ABI and interface (`deploy(DeployParams)`, deployments registry, operator fee controls). V2 is a new deployment with its own InterestModel and operator, not a different Solidity surface in the published Monolith repository.
+
+On mainnet, Lens and Metadata are shared singletons across both factories. Sepolia currently exposes a single current Factory (no separate V1 entry in the UI).
+
+Addresses: [Contract Addresses](/developers/contract-addresses).
+
 ## How to create an instance
 
 1. Choose your inputs: collateral token, price feed, branding (name/symbol), and risk posture (e.g., collateral factor, minimum debt). Optionally connect a PSM asset/vault for direct convertibility.
