@@ -513,10 +513,11 @@ function setLocalReserveFeeBps(uint _feeBps) external
 Sets the local reserve fee rate.
 
 **Parameters:**
-- `_feeBps`: New fee rate (basis points)
+- `_feeBps`: New fee rate (basis points). On V2 markets the on-chain cap is **5000** (50%). Older V1 markets still enforce **1000** (10%).
 
 **Requirements:**
 - Caller must be operator
+- `_feeBps` must be at most the market's local reserve fee cap (5000 on V2, 1000 on V1)
 
 ---
 

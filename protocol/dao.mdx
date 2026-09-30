@@ -19,7 +19,7 @@ Each DAO is a set of EIP-1167 clones (CREATE2, predictable via salt) of shared i
 - **GOV** - governance token with a fixed supply of 10,000,000
 - **Staked GOV (sGOV)** - non-transferable wrapper that carries voting power; Coin revenue can be credited to stakers on distribute
 - **Governor + Timelock** - proposal and execution path; the Timelock holds the treasury
-- **Revenue Router** - splits Coin revenue (default at launch: 100% of the routed share to GOV staking)
+- **Revenue Router** - receives pulled local reserves as operator and splits that Coin revenue (default at launch: 100% of the routed share to GOV staking)
 - **Coin staking rewards + rewards funder** - GOV emissions to Coin stakers in yearly tranches
 - **Vesting wallets** - Monolith (fixed 2%), treasury, and optional deployer vesting
 
@@ -29,6 +29,8 @@ Each DAO is a set of EIP-1167 clones (CREATE2, predictable via salt) of shared i
 
 Call the DAO Factory `deploy(userSalt, govParams, monolithParams, manager)`. This deploys a new Monolith market through the **V2** Factory and attaches the DAO in the same flow.
 
+On this path the factory also sets the new Lender's local reserve fee to **5000 bps (50%)** (`DEFAULT_LOCAL_RESERVE_FEE_BPS`). That share of borrower interest accrues as local reserves. After the Revenue Router becomes operator, `pullLocalReserves` mints those reserves to the router, which then splits them according to its GOV-staking share (100% to sGOV by default; see below).
+
 ### 2. Attach a DAO to an existing market
 
 Call `deployForExistingCoin(userSalt, govParams, lender)`. Before this, the current lender operator must set the DAO Factory as pending operator:
@@ -37,7 +39,7 @@ Call `deployForExistingCoin(userSalt, govParams, lender)`. Before this, the curr
 lender.setPendingOperator(daoFactory);
 ```
 
-The DAO Factory then accepts and completes the handoff as part of attaching governance.
+The DAO Factory then accepts and completes the handoff as part of attaching governance. Unlike the new-market path, this **does not** change the Lender's existing local reserve fee.
 
 ## GOV allocation
 
@@ -70,6 +72,8 @@ Protocol defaults used at launch (from UI / factory constants):
 | Voting period | ~5 days (36000 blocks) |
 | Proposal threshold | 0.1% of GOV supply as sGOV voting power |
 | Quorum | 0.1% of fixed GOV supply (For + Abstain); does not move with amount staked |
+| Local reserve fee (new market + DAO only) | 5000 bps (50% of interest to local reserves) |
+| Revenue Router GOV-staking share | 10000 bps (100% of routed local-reserve revenue to sGOV) |
 | Coin staking reward duration | 365 days |
 | Yearly tranche bps (of rewards reserve) | 3250, 2750, 2250, 1750 |
 

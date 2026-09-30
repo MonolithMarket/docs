@@ -39,11 +39,11 @@ icon: 'industry'
 
 
   <Accordion title="How do I launch a market with a DAO?">
-    Use the DAO Factory `deploy(userSalt, govParams, monolithParams, manager)` path. It creates a new Monolith market on the **V2** Factory and attaches DAO governance in the same flow. See [DAO](/protocol/dao) for components, GOV allocation, and default governance parameters. Addresses are on [Contract Addresses](/developers/contract-addresses).
+    Use the DAO Factory `deploy(userSalt, govParams, monolithParams, manager)` path. It creates a new Monolith market on the **V2** Factory and attaches DAO governance in the same flow. It also sets the new market's local reserve fee to 5000 bps (50%), so half of borrower interest accrues as local reserves for the DAO Revenue Router (which defaults to sending 100% of that routed revenue to sGOV stakers). See [DAO](/protocol/dao) for components, GOV allocation, and default governance parameters. Addresses are on [Contract Addresses](/developers/contract-addresses).
   </Accordion>
 
   <Accordion title="How do I attach a DAO to an existing market?">
-    First, as the current lender operator, call `lender.setPendingOperator(daoFactory)`. Then call the DAO Factory `deployForExistingCoin(userSalt, govParams, lender)`. The DAO Factory completes the operator handoff and deploys GOV, sGOV, Governor, Timelock, Revenue Router, staking rewards, and vesting wallets for that market. Details: [DAO](/protocol/dao).
+    First, as the current lender operator, call `lender.setPendingOperator(daoFactory)`. Then call the DAO Factory `deployForExistingCoin(userSalt, govParams, lender)`. The DAO Factory completes the operator handoff and deploys GOV, sGOV, Governor, Timelock, Revenue Router, staking rewards, and vesting wallets for that market. The existing local reserve fee is left unchanged. Details: [DAO](/protocol/dao).
   </Accordion>
 
 </AccordionGroup>
