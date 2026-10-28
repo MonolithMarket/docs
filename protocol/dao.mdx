@@ -48,18 +48,18 @@ Fixed GOV supply: **10,000,000**.
 | Bucket | Rule |
 |---|---|
 | Monolith | Fixed 2% (200 bps) into Monolith vesting (4-year linear) |
-| Deployer stake | Optional 0–20% into deployer vesting |
-| Remainder | Split by weights totaling 9800 bps of the leftover supply |
+| Deployer stake | Optional 0–20% into deployer vesting (a deployer recipient is required when the stake is above 0%) |
+| Immediate allocation | Fixed 5% (500 bps) of total supply, liquid at launch |
+| Remainder | Split 6500:2800 (weights totaling 9300) between Coin staking rewards and the vested treasury |
 
-Remainder weights (sum 9800):
+Remainder weights (sum 9300):
 
 | Weight | Share of remainder | Approx. of total supply when deployer stake is 0% |
 |---|---|---|
 | Coin staking rewards | 6500 | ~65% |
-| Immediate allocation | 500 | ~5% |
 | Vested treasury | 2800 | ~28% |
 
-Immediate allocation goes to the deployer recipient, or to the Timelock when unset. Division dust from the remainder split is assigned to the vested treasury so the fixed supply is fully allocated.
+Immediate allocation goes to the deployer recipient, or to the Timelock when unset. It stays at 5% of total supply regardless of deployer stake; a larger deployer stake proportionally reduces only Coin staking rewards and the vested treasury. Division dust from the remainder split is assigned to the vested treasury so the fixed supply is fully allocated.
 
 ## Governance defaults
 
@@ -76,6 +76,11 @@ Protocol defaults used at launch (from UI / factory constants):
 | Revenue Router GOV-staking share | 10000 bps (100% of routed local-reserve revenue to sGOV) |
 | Coin staking reward duration | 365 days |
 | Yearly tranche bps (of rewards reserve) | 3250, 2750, 2250, 1750 |
+
+Proposal rules on the Governor:
+
+* Each proposer can have only one live (Pending or Active) proposal at a time.
+* The proposer can cancel their own proposal, and anyone can cancel it if the proposer's sGOV voting power falls below the proposal threshold. Proposals that are already executed, canceled, or expired cannot be canceled.
 
 ## In the UI
 
